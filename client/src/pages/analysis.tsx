@@ -74,7 +74,7 @@ export default function Analysis() {
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <h2 className="text-xl font-semibold">Analysis Results</h2>
+          <h2 className="text-xl font-semibold">Результаты анализа</h2>
         </div>
 
         {/* Product Analysis */}

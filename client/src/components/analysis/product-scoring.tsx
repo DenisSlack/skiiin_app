@@ -57,7 +57,7 @@ export default function ProductScoring({ scoring }: ProductScoringProps) {
     <Card className="border-gray-200">
       <CardContent className="p-4 space-y-4">
         <div className="flex items-center justify-between">
-          <h4 className="font-semibold">Product Scoring</h4>
+          <h4 className="font-semibold">Оценка продукта</h4>
           <div className="flex items-center space-x-2">
             {getRecommendationIcon(scoring.recommendation)}
             <span className="text-sm font-medium">
