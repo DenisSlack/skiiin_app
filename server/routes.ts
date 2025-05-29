@@ -346,12 +346,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const ingredients = await findProductIngredients(productName);
       
-      // Если состав не найден, предлагаем пользователю сканирование
+      // Если состав не найден или неполный, предлагаем пользователю сканирование
       if (!ingredients || ingredients.length === 0) {
         return res.json({ 
           ingredients: "",
           message: "Не удалось найти состав продукта в базе данных. Попробуйте отсканировать ингредиенты с упаковки с помощью камеры.",
           suggestScanning: true
+        });
+      }
+      
+      // Проверяем качество найденного состава
+      const ingredientCount = ingredients.split(',').length;
+      if (ingredientCount < 5 || ingredients.length < 30) {
+        return res.json({ 
+          ingredients: "",
+          message: `Найден неполный состав продукта (${ingredientCount} ингредиентов). Для точного анализа рекомендуем отсканировать полный список с упаковки.`,
+          suggestScanning: true,
+          partialIngredients: ingredients
         });
       }
       
