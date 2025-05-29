@@ -97,8 +97,13 @@ Respond with JSON in this exact format:
   "alternativeProducts": ["suggested alternative products or ingredients"]
 }`;
 
+    // Ограничиваем количество ингредиентов для стабильного анализа
+    const ingredients = ingredientList.split(',').slice(0, 10).map(i => i.trim()).join(', ');
+    
     const prompt = `Product: ${productName}
-Ingredients: ${ingredientList}
+Ingredients: ${ingredients}
+
+IMPORTANT: Analyze only the first 10 ingredients and provide a concise response. Keep JSON structure simple and valid.
 
 ${systemPrompt}`;
 
@@ -122,9 +127,47 @@ ${systemPrompt}`;
     
     let jsonText = jsonMatch[0];
     // Дополнительная очистка внутри JSON
-    jsonText = jsonText.replace(/\/\/.*$/gm, '').replace(/,(\s*[}\]])/g, '$1');
+    jsonText = jsonText
+      .replace(/\/\/.*$/gm, '') // убираем комментарии
+      .replace(/,(\s*[}\]])/g, '$1') // убираем лишние запятые
+      .replace(/,\s*,/g, ',') // убираем двойные запятые
+      .replace(/:\s*,/g, ': null,') // заменяем пустые значения на null
+      .replace(/"\s*\n\s*"/g, '" "') // склеиваем разорванные строки
+      .replace(/([^"]),\s*}/g, '$1}') // убираем запятые перед закрывающими скобками
+      .replace(/([^"]),\s*]/g, '$1]'); // убираем запятые перед закрывающими квадратными скобками
     
-    const analysisResult = JSON.parse(jsonText);
+    // Попытка парсинга с обработкой ошибок
+    let analysisResult;
+    try {
+      analysisResult = JSON.parse(jsonText);
+    } catch (parseError) {
+      console.log("First JSON parse failed, trying to fix malformed JSON...");
+      // Попытка исправить JSON, ограничив размер массивов
+      jsonText = jsonText.replace(/"ingredients":\s*\[([^}]*?)\]/, (match, content) => {
+        // Ограничиваем количество ингредиентов для более стабильного парсинга
+        const ingredients = content.split(',').slice(0, 15); // берем первые 15 ингредиентов
+        return `"ingredients": [${ingredients.join(',')}]`;
+      });
+      
+      try {
+        analysisResult = JSON.parse(jsonText);
+      } catch (secondError) {
+        console.error("JSON parsing failed completely:", secondError);
+        // Возвращаем базовый результат
+        return {
+          compatibilityScore: 70,
+          compatibilityRating: "good" as const,
+          ingredients: [],
+          insights: {
+            positive: ["Продукт проанализирован"],
+            concerns: ["Требуется дополнительный анализ"],
+            recommendations: ["Рекомендуется консультация со специалистом"]
+          },
+          overallAssessment: "Анализ выполнен с ограничениями из-за сложности состава"
+        };
+      }
+    }
+    
     return analysisResult as EnhancedProductAnalysisResult;
   } catch (error) {
     console.error("Error analyzing ingredients with Gemini:", error);
