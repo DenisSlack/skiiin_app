@@ -18,6 +18,7 @@ export default function Scanner() {
   const [showCamera, setShowCamera] = useState(false);
   const [productName, setProductName] = useState("");
   const [ingredients, setIngredients] = useState("");
+  const [productImage, setProductImage] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -104,11 +105,12 @@ export default function Scanner() {
         }
       }
 
-      // Create product with ingredients
+      // Create product with ingredients and image
       createProductMutation.mutate({
         name: productName,
         category: "unknown",
         ingredients: finalIngredients.split(",").map(i => i.trim()),
+        imageUrl: productImage,
       });
     } catch (error) {
       toast({
@@ -120,12 +122,18 @@ export default function Scanner() {
     }
   };
 
-  const handleScanResult = (scannedText: string, extractedIngredients?: string[]) => {
+  const handleScanResult = (scannedText: string, extractedIngredients?: string[], capturedImage?: string) => {
     if (extractedIngredients && extractedIngredients.length > 0) {
       setIngredients(extractedIngredients.join(", "));
     } else {
       setIngredients(scannedText);
     }
+    
+    // Сохраняем захваченное изображение
+    if (capturedImage) {
+      setProductImage(capturedImage);
+    }
+    
     setShowCamera(false);
   };
 

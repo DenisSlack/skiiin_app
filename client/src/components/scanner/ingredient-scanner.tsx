@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface IngredientScannerProps {
   onClose: () => void;
-  onResult?: (scannedText: string, extractedIngredients?: string[]) => void;
+  onResult?: (scannedText: string, extractedIngredients?: string[], capturedImage?: string) => void;
 }
 
 export default function IngredientScanner({ onClose, onResult }: IngredientScannerProps) {
