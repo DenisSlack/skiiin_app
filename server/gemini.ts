@@ -51,8 +51,8 @@ export async function analyzeIngredientsWithGemini(
       throw new Error("PERPLEXITY_API_KEY не настроен");
     }
 
-    // Ограничиваем количество ингредиентов для детального анализа
-    const ingredients = ingredientList.split(',').slice(0, 8).map(i => i.trim());
+    // Ограничиваем количество ингредиентов для ускорения анализа
+    const ingredients = ingredientList.split(',').slice(0, 5).map(i => i.trim());
     
     const skinProfileText = skinProfile ? `
 Профиль кожи пользователя:
@@ -80,18 +80,12 @@ export async function analyzeIngredientsWithGemini(
 
 ${skinProfileText}
 
-Для каждого из первых 8 ингредиентов найди:
-1. Научное назначение и механизм действия
-2. Последние исследования эффективности (2023-2024)
-3. Безопасность и возможные побочные эффекты
-4. Совместимость с типом кожи пользователя
-5. Взаимодействие с другими ингредиентами
+Для первых 5 ключевых ингредиентов дай краткий анализ:
+1. Назначение
+2. Безопасность для типа кожи пользователя
+3. Совместимость (0-100)
 
-Также включи:
-- Общая оценка совместимости (0-100)
-- Современные тренды в косметологии
-- Экспертные рекомендации дерматологов
-- Альтернативные продукты
+Общая оценка продукта и рекомендации.
 
 Ответь строго в JSON формате:
 {
@@ -122,9 +116,9 @@ ${skinProfileText}
 }`
           }
         ],
-        max_tokens: 2000,
-        temperature: 0.3,
-        top_p: 0.9,
+        max_tokens: 1200,
+        temperature: 0.2,
+        top_p: 0.8,
         search_recency_filter: "month",
         return_images: false,
         return_related_questions: false,
@@ -316,10 +310,10 @@ export async function findProductIngredients(productName: string): Promise<strin
 Если состав не найден, верни пустую строку.`
           }
         ],
-        max_tokens: 500,
+        max_tokens: 300,
         temperature: 0.1,
-        top_p: 0.9,
-        search_recency_filter: "month",
+        top_p: 0.8,
+        search_recency_filter: "week",
         return_images: false,
         return_related_questions: false,
         stream: false
