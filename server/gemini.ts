@@ -624,18 +624,17 @@ export async function findProductImage(productName: string): Promise<string> {
           },
           {
             role: "user", 
-            content: `Найди высококачественное изображение косметического продукта "${productName}". 
+            content: `Find a high-quality product image for cosmetic product "${productName}".
 
-Ищи на:
-- Официальных сайтах брендов косметики
-- Wildberries, Ozon, Летуаль, Рив Гош
-- Sephora, Ulta Beauty, Douglas
-- Официальных каталогах красоты
+Search on these sources:
+- Official brand websites (payot.com, laroche-posay.com, etc.)
+- Beauty retailers: Wildberries, Ozon, Sephora, Ulta, Douglas
+- Beauty catalogs and product databases
 
-ВАЖНО: Верни ТОЛЬКО прямую ссылку на изображение формата .jpg, .jpeg, .png или .webp
-Не добавляй никакого текста, только URL!
+IMPORTANT: Return ONLY a direct image URL in format .jpg, .jpeg, .png or .webp
+Do NOT add any text, just the URL!
 
-Пример правильного ответа: https://example.com/product.jpg`
+Example correct answer: https://example.com/product.jpg`
           }
         ],
         max_tokens: 150,
@@ -672,6 +671,46 @@ export async function findProductImage(productName: string): Promise<string> {
     }
     
     console.log(`No valid image URL found for ${productName}`);
+    
+    // Попробуем альтернативный поиск с упрощенным запросом
+    try {
+      const fallbackResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: "llama-3.1-sonar-small-128k-online",
+          messages: [
+            {
+              role: "user",
+              content: `Search for "${productName}" cosmetic product image. Return only image URL.`
+            }
+          ],
+          max_tokens: 100,
+          temperature: 0.1,
+          search_recency_filter: "month",
+          return_images: true,
+          stream: false
+        })
+      });
+
+      if (fallbackResponse.ok) {
+        const fallbackData = await fallbackResponse.json();
+        const fallbackText = fallbackData.choices[0]?.message?.content?.trim() || "";
+        const fallbackMatches = fallbackText.match(urlPattern);
+        
+        if (fallbackMatches && fallbackMatches.length > 0) {
+          const fallbackUrl = fallbackMatches[0].trim().replace(/[)"'\]\s]+$/, '');
+          console.log(`Fallback image found for ${productName}: ${fallbackUrl}`);
+          return fallbackUrl;
+        }
+      }
+    } catch (fallbackError) {
+      console.log(`Fallback search also failed for ${productName}`);
+    }
+    
     return "";
 
   } catch (error) {
