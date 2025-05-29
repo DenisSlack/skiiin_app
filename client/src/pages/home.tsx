@@ -80,7 +80,13 @@ export default function Home() {
         {/* Scanner Section */}
         <Card className="border-gray-200">
           <CardContent className="p-6 space-y-4">
-            <h3 className="text-lg font-semibold text-center">Product Scanner</h3>
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-semibold">Enhanced AI Scanner</h3>
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-xs text-gray-600">Powered by Advanced AI Research</span>
+              </div>
+            </div>
             
             {/* Camera Preview Area */}
             <div className="relative bg-gray-100 rounded-xl h-48 flex items-center justify-center overflow-hidden">
