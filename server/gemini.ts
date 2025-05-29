@@ -406,27 +406,55 @@ export async function findProductIngredients(productName: string): Promise<strin
 // Функция для извлечения ингредиентов из текста
 export async function extractIngredientsFromText(inputText: string): Promise<string[]> {
   try {
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash-8b",
-      generationConfig: {
+    if (!process.env.PERPLEXITY_API_KEY) {
+      throw new Error("PERPLEXITY_API_KEY не настроен");
+    }
+
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: "llama-3.1-sonar-small-128k-online",
+        messages: [
+          {
+            role: "system",
+            content: "Ты эксперт по косметическим ингредиентам. Извлекай только настоящие косметические ингредиенты из текста."
+          },
+          {
+            role: "user",
+            content: `Извлеки все косметические ингредиенты из следующего текста: "${inputText}"
+
+Правила:
+- Только реальные косметические ингредиенты
+- Исключи размеры упаковок, цены, описания
+- Максимум 15 ингредиентов
+- Названия на латинице или русском языке
+
+Ответь в JSON формате:
+{
+  "ingredients": ["ингредиент1", "ингредиент2", ...]
+}`
+          }
+        ],
+        max_tokens: 400,
         temperature: 0.1,
-        topP: 0.8,
-        maxOutputTokens: 500,
-      }
+        top_p: 0.8,
+        search_recency_filter: "month",
+        return_images: false,
+        return_related_questions: false,
+        stream: false
+      })
     });
 
-    const prompt = `Извлеки все косметические ингредиенты из данного текста. Верни только чистый список ингредиентов в формате JSON.
-    
-    Текст: "${inputText}"
-    
-    Верни в JSON формате:
-    {
-      "ingredients": ["ингредиент1", "ингредиент2", ...]
-    }`;
+    if (!response.ok) {
+      throw new Error(`Perplexity API error: ${response.status}`);
+    }
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    let responseText = response.text();
+    const data = await response.json();
+    let responseText = data.choices[0]?.message?.content?.trim() || "";
     
     // Очищаем от markdown и комментариев
     responseText = responseText
@@ -574,7 +602,7 @@ export async function researchIngredientSafety(
   }
 }
 
-// Функция для поиска изображения продукта
+// Функция для поиска изображения продукта через Perplexity
 export async function findProductImage(productName: string): Promise<string> {
   if (!process.env.PERPLEXITY_API_KEY) {
     throw new Error("PERPLEXITY_API_KEY не настроен");
@@ -592,25 +620,28 @@ export async function findProductImage(productName: string): Promise<string> {
         messages: [
           {
             role: "system",
-            content: "Ты эксперт по поиску изображений косметических продуктов. Находи только официальные изображения продуктов высокого качества."
+            content: "Ты эксперт по поиску изображений косметических продуктов. Возвращай ТОЛЬКО прямые ссылки на изображения продуктов."
           },
           {
             role: "user", 
-            content: `Найди официальное изображение косметического продукта "${productName}" на официальных сайтах брендов, интернет-магазинах или каталогах красоты. 
+            content: `Найди высококачественное изображение косметического продукта "${productName}". 
 
-Требования:
-- Только прямые ссылки на изображения (.jpg, .jpeg, .png, .webp)
-- Высокое качество изображения
-- Официальные источники (сайты брендов, магазины красоты)
-- Изображение упаковки продукта
+Ищи на:
+- Официальных сайтах брендов косметики
+- Wildberries, Ozon, Летуаль, Рив Гош
+- Sephora, Ulta Beauty, Douglas
+- Официальных каталогах красоты
 
-Верни ТОЛЬКО ссылку на изображение, без дополнительного текста.`
+ВАЖНО: Верни ТОЛЬКО прямую ссылку на изображение формата .jpg, .jpeg, .png или .webp
+Не добавляй никакого текста, только URL!
+
+Пример правильного ответа: https://example.com/product.jpg`
           }
         ],
-        max_tokens: 100,
+        max_tokens: 150,
         temperature: 0.1,
-        top_p: 0.8,
-        search_recency_filter: "month",
+        top_p: 0.7,
+        search_recency_filter: "week",
         return_images: true,
         return_related_questions: false,
         stream: false
@@ -618,23 +649,25 @@ export async function findProductImage(productName: string): Promise<string> {
     });
 
     if (!response.ok) {
-      throw new Error(`Perplexity API error: ${response.status}`);
+      console.log(`Perplexity API error: ${response.status}`);
+      return "";
     }
 
     const data = await response.json();
-    let imageUrl = data.choices[0]?.message?.content?.trim() || "";
+    let responseText = data.choices[0]?.message?.content?.trim() || "";
     
-    // Извлекаем URL из ответа, если он содержит дополнительный текст
-    const urlMatch = imageUrl.match(/(https?:\/\/[^\s]+\.(?:jpg|jpeg|png|webp))/i);
-    if (urlMatch) {
-      imageUrl = urlMatch[1];
-    }
+    // Извлекаем первый найденный URL изображения
+    const urlPattern = /(https?:\/\/[^\s\[\]<>"']+\.(?:jpg|jpeg|png|webp)(?:\?[^\s\[\]<>"']*)?)/gi;
+    const matches = responseText.match(urlPattern);
     
-    // Проверяем, что это действительно URL изображения
-    if (imageUrl && imageUrl.startsWith('http') && /\.(jpg|jpeg|png|webp)(\?|$)/i.test(imageUrl)) {
+    if (matches && matches.length > 0) {
+      // Берем первый найденный URL и очищаем от лишних символов
+      let imageUrl = matches[0].replace(/[^\w\-._~:/?#[\]@!$&'()*+,;=%]/g, '');
+      console.log(`Found image for ${productName}: ${imageUrl}`);
       return imageUrl;
     }
     
+    console.log(`No valid image URL found for ${productName}`);
     return "";
 
   } catch (error) {
