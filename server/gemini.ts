@@ -491,43 +491,67 @@ export async function generatePartnerRecommendations(
   skinProfile?: SkinProfile
 ): Promise<{ products: any[]; reasoning: string }> {
   try {
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash-8b",
-      generationConfig: {
+    if (!process.env.PERPLEXITY_API_KEY) {
+      throw new Error("PERPLEXITY_API_KEY не настроен");
+    }
+
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: "llama-3.1-sonar-small-128k-online",
+        messages: [
+          {
+            role: "system",
+            content: "Ты эксперт по косметике. Рекомендуй альтернативные продукты на основе анализа."
+          },
+          {
+            role: "user",
+            content: `На основе анализа косметического продукта и профиля кожи, предложи 3-4 альтернативных товара для покупки.
+    
+Анализ продукта: ${JSON.stringify(analysisResult)}
+${skinProfile ? `Тип кожи: ${JSON.stringify(skinProfile)}` : ''}
+    
+Предложи конкретные продукты российских и международных брендов с указанием:
+- Название бренда и продукта
+- Примерная цена в рублях
+- Где можно купить (Wildberries, Ozon, Летуаль, Рив Гош и т.д.)
+- Краткое описание почему этот продукт подходит
+    
+Верни в JSON формате:
+{
+  "products": [
+    {
+      "brand": "Бренд",
+      "name": "Название продукта", 
+      "price": "1500-2000 руб",
+      "store": "Wildberries",
+      "reason": "Причина рекомендации"
+    }
+  ],
+  "reasoning": "Общее обоснование выбора"
+}`
+          }
+        ],
+        max_tokens: 800,
         temperature: 0.2,
-        topP: 0.8,
-        maxOutputTokens: 600,
-      }
+        top_p: 0.8,
+        search_recency_filter: "month",
+        return_images: false,
+        return_related_questions: false,
+        stream: false
+      })
     });
 
-    const prompt = `На основе анализа косметического продукта и профиля кожи, предложи 3-5 альтернативных товаров для покупки.
-    
-    Анализ продукта: ${JSON.stringify(analysisResult)}
-    ${skinProfile ? `Тип кожи: ${JSON.stringify(skinProfile)}` : ''}
-    
-    Предложи конкретные продукты российских и международных брендов с указанием:
-    - Название бренда и продукта
-    - Примерная цена в рублях
-    - Где можно купить (Wildberries, Ozon, Летуаль, Рив Гош и т.д.)
-    - Краткое описание почему этот продукт подходит
-    
-    Верни в JSON формате:
-    {
-      "products": [
-        {
-          "brand": "Бренд",
-          "name": "Название продукта", 
-          "price": "1500-2000 руб",
-          "store": "Wildberries",
-          "reason": "Причина рекомендации"
-        }
-      ],
-      "reasoning": "Общее обоснование выбора"
-    }`;
+    if (!response.ok) {
+      throw new Error(`Perplexity API error: ${response.status}`);
+    }
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    let text = response.text();
+    const data = await response.json();
+    let text = data.choices[0]?.message?.content?.trim() || "";
     
     // Очищаем от markdown форматирования
     text = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
@@ -711,7 +735,8 @@ Example correct answer: https://example.com/product.jpg`
       console.log(`Fallback search also failed for ${productName}`);
     }
     
-    return "";
+    // Возвращаем URL изображения-заглушки
+    return "https://via.placeholder.com/300x300/f3f4f6/6b7280?text=Косметический+продукт";
 
   } catch (error) {
     console.error("Error finding product image:", error);
