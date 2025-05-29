@@ -320,23 +320,23 @@ export async function findProductIngredients(productName: string): Promise<strin
         messages: [
           {
             role: "system",
-            content: "Ты эксперт по косметике. Возвращай ТОЛЬКО чистый список ингредиентов без объяснений, рассуждений или технической информации."
+            content: "You are a cosmetics expert. Return ONLY the clean ingredients list in English without explanations, reasoning or technical information."
           },
           {
             role: "user",
-            content: `Найди состав продукта "${productName}". 
+            content: `Find the ingredients list for cosmetic product "${productName}". 
 
-ВЕРНИ ТОЛЬКО: список ингредиентов через запятую
+RETURN ONLY: ingredients list in English, separated by commas
 
-НЕ ДОБАВЛЯЙ:
-- "Из доступных источников..."
-- "Однако..."
-- "По информации..."
-- Любые объяснения или комментарии
+DO NOT ADD:
+- "Based on available sources..."
+- "However..."
+- "According to..."
+- Any explanations or comments
 
-Пример правильного ответа: "Water, Glycerin, Niacinamide, Cetyl Alcohol"
+Example correct answer: "Water, Glycerin, Niacinamide, Cetyl Alcohol, Salicylic Acid"
 
-Если состав не найден, верни пустую строку.`
+If ingredients not found, return empty string.`
           }
         ],
         max_tokens: 300,
@@ -661,8 +661,12 @@ export async function findProductImage(productName: string): Promise<string> {
     const matches = responseText.match(urlPattern);
     
     if (matches && matches.length > 0) {
-      // Берем первый найденный URL и очищаем от лишних символов
-      let imageUrl = matches[0].replace(/[^\w\-._~:/?#[\]@!$&'()*+,;=%]/g, '');
+      // Берем первый найденный URL и минимально очищаем
+      let imageUrl = matches[0].trim();
+      
+      // Убираем только явно лишние символы в конце
+      imageUrl = imageUrl.replace(/[)"'\]\s]+$/, '');
+      
       console.log(`Found image for ${productName}: ${imageUrl}`);
       return imageUrl;
     }
