@@ -17,7 +17,8 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [extractedText, setExtractedText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [uploadMode, setUploadMode] = useState<'camera' | 'upload'>('camera');
+  const [uploadMode, setUploadMode] = useState<'camera' | 'upload' | 'search'>('camera');
+  const [productName, setProductName] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -89,6 +90,65 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
     setExtractedText("");
     handleStartCamera();
   }, [handleStartCamera]);
+
+  const handleProductSearch = useCallback(async () => {
+    if (!productName.trim()) {
+      toast({
+        title: "Ошибка",
+        description: "Введите название продукта",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      
+      const response = await fetch('/api/find-ingredients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productName: productName.trim() })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to find ingredients');
+      }
+
+      const data = await response.json();
+      
+      if (data.ingredients && data.ingredients.trim()) {
+        setExtractedText(data.ingredients);
+        // Extract ingredients using AI
+        const ingredientResponse = await fetch('/api/extract-ingredients', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: data.ingredients })
+        });
+        
+        if (ingredientResponse.ok) {
+          const ingredientData = await ingredientResponse.json();
+          onResult?.(data.ingredients, ingredientData.ingredients);
+        } else {
+          onResult?.(data.ingredients);
+        }
+      } else {
+        toast({
+          title: "Состав не найден",
+          description: "Не удалось найти состав этого продукта. Попробуйте сканирование.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Failed to search product:", error);
+      toast({
+        title: "Ошибка поиска",
+        description: "Не удалось найти продукт. Проверьте соединение.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [productName, onResult, toast]);
 
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -217,18 +277,26 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
               <div className="w-24 h-24 bg-gray-700 rounded-full flex items-center justify-center mx-auto">
                 {uploadMode === 'camera' ? (
                   <Camera className="w-12 h-12 text-gray-400" />
-                ) : (
+                ) : uploadMode === 'upload' ? (
                   <Image className="w-12 h-12 text-gray-400" />
+                ) : (
+                  <svg className="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M15.5 14h-.79l-.28-.27A6.518 6.518 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                  </svg>
                 )}
               </div>
               <div>
                 <h3 className="text-lg font-semibold mb-2">
-                  {uploadMode === 'camera' ? 'Сканировать ингредиенты' : 'Загрузить фото продукта'}
+                  {uploadMode === 'camera' ? 'Сканировать ингредиенты' : 
+                   uploadMode === 'upload' ? 'Загрузить фото продукта' : 
+                   'Поиск по названию'}
                 </h3>
                 <p className="text-gray-300 text-sm">
                   {uploadMode === 'camera' 
                     ? 'Наведите камеру на список ингредиентов продукта'
-                    : 'Выберите фото из галереи со списком ингредиентов'
+                    : uploadMode === 'upload'
+                    ? 'Выберите фото из галереи со списком ингредиентов'
+                    : 'Введите название продукта для автоматического поиска состава'
                   }
                 </p>
               </div>
@@ -266,60 +334,99 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
           /* Camera/Upload Controls */
           <div className="space-y-4">
             {/* Mode Toggle */}
-            <div className="flex bg-gray-800 rounded-lg p-1 max-w-xs mx-auto">
+            <div className="flex bg-gray-800 rounded-lg p-1 max-w-md mx-auto">
               <button
                 onClick={() => setUploadMode('camera')}
-                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors flex-1 justify-center ${
+                className={`flex items-center px-3 py-2 rounded-md text-xs font-medium transition-colors flex-1 justify-center ${
                   uploadMode === 'camera' 
                     ? 'bg-white text-black' 
                     : 'text-gray-300 hover:text-white'
                 }`}
               >
-                <Camera className="w-4 h-4 mr-2" />
+                <Camera className="w-3 h-3 mr-1" />
                 Камера
               </button>
               <button
                 onClick={() => setUploadMode('upload')}
-                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors flex-1 justify-center ${
+                className={`flex items-center px-3 py-2 rounded-md text-xs font-medium transition-colors flex-1 justify-center ${
                   uploadMode === 'upload' 
                     ? 'bg-white text-black' 
                     : 'text-gray-300 hover:text-white'
                 }`}
               >
-                <Upload className="w-4 h-4 mr-2" />
+                <Upload className="w-3 h-3 mr-1" />
                 Галерея
+              </button>
+              <button
+                onClick={() => setUploadMode('search')}
+                className={`flex items-center px-3 py-2 rounded-md text-xs font-medium transition-colors flex-1 justify-center ${
+                  uploadMode === 'search' 
+                    ? 'bg-white text-black' 
+                    : 'text-gray-300 hover:text-white'
+                }`}
+              >
+                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M15.5 14h-.79l-.28-.27A6.518 6.518 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                </svg>
+                Поиск
               </button>
             </div>
 
             {/* Action Controls */}
-            <div className="flex justify-center space-x-4">
-              {uploadMode === 'camera' ? (
-                !isScanning ? (
+            <div className="flex flex-col items-center space-y-4">
+              {uploadMode === 'search' && (
+                <div className="w-full max-w-sm space-y-3">
+                  <input
+                    type="text"
+                    placeholder="Введите название продукта..."
+                    value={productName}
+                    onChange={(e) => setProductName(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg border border-gray-600 focus:border-white focus:outline-none"
+                    onKeyPress={(e) => e.key === 'Enter' && !isProcessing && handleProductSearch()}
+                  />
+                </div>
+              )}
+              
+              <div className="flex justify-center space-x-4">
+                {uploadMode === 'camera' ? (
+                  !isScanning ? (
+                    <Button
+                      className="w-16 h-16 rounded-full app-gradient text-white"
+                      onClick={handleStartCamera}
+                    >
+                      <Camera className="w-8 h-8" />
+                    </Button>
+                  ) : (
+                    <Button
+                      className="w-16 h-16 rounded-full bg-white text-black"
+                      onClick={handleCapture}
+                      disabled={isProcessing}
+                    >
+                      <div className="w-12 h-12 bg-black rounded-full"></div>
+                    </Button>
+                  )
+                ) : uploadMode === 'upload' ? (
                   <Button
-                    className="w-16 h-16 rounded-full app-gradient text-white"
-                    onClick={handleStartCamera}
+                    className="px-6 py-3 app-gradient text-white rounded-lg"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isProcessing}
                   >
-                    <Camera className="w-8 h-8" />
+                    <Upload className="w-5 h-5 mr-2" />
+                    {isProcessing ? 'Обработка...' : 'Выбрать фото'}
                   </Button>
                 ) : (
                   <Button
-                    className="w-16 h-16 rounded-full bg-white text-black"
-                    onClick={handleCapture}
-                    disabled={isProcessing}
+                    className="px-6 py-3 app-gradient text-white rounded-lg"
+                    onClick={handleProductSearch}
+                    disabled={isProcessing || !productName.trim()}
                   >
-                    <div className="w-12 h-12 bg-black rounded-full"></div>
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M15.5 14h-.79l-.28-.27A6.518 6.518 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                    </svg>
+                    {isProcessing ? 'Поиск...' : 'Найти состав'}
                   </Button>
-                )
-              ) : (
-                <Button
-                  className="px-6 py-3 app-gradient text-white rounded-lg"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isProcessing}
-                >
-                  <Upload className="w-5 h-5 mr-2" />
-                  {isProcessing ? 'Обработка...' : 'Выбрать фото'}
-                </Button>
-              )}
+                )}
+              </div>
             </div>
 
             {/* Hidden file input */}
