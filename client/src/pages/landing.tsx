@@ -18,14 +18,14 @@ export default function Landing() {
           </div>
           <div className="space-y-2">
             <h1 className="text-3xl font-bold">Skiiin IQ</h1>
-            <p className="text-gray-600 text-lg">Smart Cosmetic Analysis</p>
+            <p className="text-gray-600 text-lg">Умный анализ косметики</p>
           </div>
         </div>
 
         {/* Features */}
         <div className="w-full space-y-4">
           <h2 className="text-xl font-semibold text-center mb-6">
-            Analyze ingredients. Get personalized insights.
+            Анализируйте состав. Получайте персональные рекомендации.
           </h2>
           
           <div className="space-y-4">
@@ -35,8 +35,8 @@ export default function Landing() {
                   <Camera className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-medium">Scan Ingredients</h3>
-                  <p className="text-sm text-gray-600">Use your camera to analyze product ingredients instantly</p>
+                  <h3 className="font-medium">Сканируйте состав</h3>
+                  <p className="text-sm text-gray-600">Используйте камеру для мгновенного анализа состава продукта</p>
                 </div>
               </CardContent>
             </Card>
@@ -47,8 +47,8 @@ export default function Landing() {
                   <UserCheck className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-medium">Personalized Analysis</h3>
-                  <p className="text-sm text-gray-600">Get recommendations based on your unique skin profile</p>
+                  <h3 className="font-medium">Персональный анализ</h3>
+                  <p className="text-sm text-gray-600">Получайте рекомендации на основе вашего уникального профиля кожи</p>
                 </div>
               </CardContent>
             </Card>
@@ -59,8 +59,8 @@ export default function Landing() {
                   <Save className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-medium">Build Your Library</h3>
-                  <p className="text-sm text-gray-600">Save and track your skincare products over time</p>
+                  <h3 className="font-medium">Создайте библиотеку</h3>
+                  <p className="text-sm text-gray-600">Сохраняйте и отслеживайте ваши косметические продукты</p>
                 </div>
               </CardContent>
             </Card>
@@ -74,10 +74,10 @@ export default function Landing() {
             className="w-full app-gradient text-white py-4 text-lg font-medium"
             size="lg"
           >
-            Get Started
+            Начать
           </Button>
           <p className="text-xs text-gray-500 text-center">
-            Make smarter skincare choices with AI-powered analysis
+            Принимайте более обоснованные решения по уходу за кожей с помощью ИИ-анализа
           </p>
         </div>
 

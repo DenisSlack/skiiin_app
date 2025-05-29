@@ -554,10 +554,16 @@ Respond with JSON:
     
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new Error("Invalid response format from Gemini");
+      console.log("No JSON found in response:", text);
+      return "";
     }
     
-    return JSON.parse(jsonMatch[0]);
+    try {
+      return JSON.parse(jsonMatch[0]);
+    } catch (parseError) {
+      console.log("Failed to parse JSON:", jsonMatch[0]);
+      return "";
+    }
   } catch (error) {
     console.error("Error researching ingredient safety:", error);
     throw new Error("Failed to research ingredient safety: " + (error as Error).message);
