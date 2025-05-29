@@ -534,20 +534,22 @@ export async function researchIngredientSafety(
       }
     });
 
-    const prompt = `Research the latest safety profile for the cosmetic ingredient "${ingredientName}"${skinType ? ` specifically for ${skinType} skin` : ''}.
+    const prompt = `Исследуй профиль безопасности косметического ингредиента "${ingredientName}"${skinType ? ` специально для кожи типа ${skinType}` : ''}.
 
-Provide:
-1. Current safety assessment based on latest research
-2. Recent clinical studies and findings
-3. Expert dermatologist opinions
-4. Any regulatory updates or warnings
-5. Concentration guidelines and best practices
+Предоставь на русском языке:
+1. Текущую оценку безопасности на основе последних исследований
+2. Результаты недавних клинических исследований
+3. Мнения экспертов-дерматологов
+4. Любые регулятивные обновления или предупреждения
+5. Рекомендации по концентрации и лучшие практики
 
-Respond with JSON:
+ВАЖНО: Отвечай строго на русском языке.
+
+Ответь в формате JSON:
 {
-  "safetyProfile": "comprehensive safety assessment",
-  "recentStudies": ["recent study findings"],
-  "expertOpinions": ["dermatologist expert opinions"]
+  "safetyProfile": "комплексная оценка безопасности на русском языке",
+  "recentStudies": ["результаты недавних исследований на русском языке"],
+  "expertOpinions": ["мнения экспертов-дерматологов на русском языке"]
 }`;
 
     const result = await model.generateContent(prompt);
