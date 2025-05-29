@@ -75,12 +75,16 @@ If ingredients not found, return "Not found"`;
     const response = await result.response;
     let ingredients = response.text().trim();
     
+    console.log(`Gemini raw response for ${productName}:`, ingredients);
+    
     // Clean the response
     ingredients = ingredients
       .replace(/```.*$/gm, '')
       .replace(/\*\*/g, '')
       .replace(/^\*\s*/gm, '')
       .trim();
+    
+    console.log(`Gemini cleaned response for ${productName}:`, ingredients);
     
     // Extract ingredients from the response
     if (ingredients.includes(':')) {
@@ -92,9 +96,11 @@ If ingredients not found, return "Not found"`;
     if (ingredients.toLowerCase().includes('not found') || 
         ingredients.toLowerCase().includes('не найден') || 
         ingredients.length < 10) {
+      console.log(`Gemini failed to find valid ingredients for ${productName}`);
       return "";
     }
     
+    console.log(`Gemini successfully found ingredients for ${productName}:`, ingredients);
     return ingredients;
   } catch (error) {
     console.error("Error finding ingredients with Gemini:", error);
