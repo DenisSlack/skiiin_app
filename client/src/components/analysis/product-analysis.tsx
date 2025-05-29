@@ -285,23 +285,23 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
               <TabsContent value="research" className="space-y-3">
                 <div className="flex items-center space-x-2 mb-4">
                   <Microscope className="w-4 h-4 text-primary" />
-                  <h4 className="font-semibold">Research & Reviews</h4>
+                  <h4 className="font-semibold">Исследования и отзывы</h4>
                 </div>
                 
                 {/* Научные исследования */}
                 {researchSummary ? (
                   <div className="p-4 bg-blue-50 rounded-lg">
-                    <h5 className="text-sm font-medium mb-2">Scientific Research</h5>
+                    <h5 className="text-sm font-medium mb-2">Научные исследования</h5>
                     <p className="text-sm text-blue-800">{researchSummary}</p>
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-600">Research summary not available for this analysis.</p>
+                  <p className="text-sm text-gray-600">Сводка исследований недоступна для данного анализа.</p>
                 )}
 
                 {/* Отзывы пользователей */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <h5 className="text-sm font-medium">User Reviews from Internet</h5>
+                    <h5 className="text-sm font-medium">Отзывы пользователей из интернета</h5>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -309,7 +309,7 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
                       onClick={() => getUserReviews.mutate()}
                       disabled={getUserReviews.isPending}
                     >
-                      {getUserReviews.isPending ? "Loading..." : "Load Reviews"}
+                      {getUserReviews.isPending ? "Загрузка..." : "Загрузить отзывы"}
                     </Button>
                   </div>
                   
@@ -322,14 +322,14 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
                       ))}
                     </div>
                   ) : userReviews.length === 0 && !getUserReviews.isPending ? (
-                    <p className="text-xs text-gray-500">Click "Load Reviews" to see user reviews from the internet</p>
+                    <p className="text-xs text-gray-500">Нажмите "Загрузить отзывы", чтобы увидеть отзывы пользователей из интернета</p>
                   ) : null}
                 </div>
                 
                 {/* Альтернативные продукты */}
                 {alternativeProducts.length > 0 && (
                   <div className="space-y-2">
-                    <h5 className="text-sm font-medium">Alternative Products</h5>
+                    <h5 className="text-sm font-medium">Альтернативные продукты</h5>
                     <div className="space-y-1">
                       {alternativeProducts.slice(0, 3).map((alt: string, index: number) => (
                         <div key={index} className="text-xs p-2 bg-green-50 rounded border-l-2 border-green-400">
@@ -344,7 +344,7 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
               <TabsContent value="trends" className="space-y-3">
                 <div className="flex items-center space-x-2 mb-4">
                   <TrendingUp className="w-4 h-4 text-primary" />
-                  <h4 className="font-semibold">Market Trends</h4>
+                  <h4 className="font-semibold">Рыночные тренды</h4>
                 </div>
                 
                 {marketTrends.length > 0 ? (
@@ -357,14 +357,14 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-600">Market trend data not available for this analysis.</p>
+                  <p className="text-sm text-gray-600">Данные о рыночных трендах недоступны для данного анализа.</p>
                 )}
               </TabsContent>
 
               <TabsContent value="expert" className="space-y-3">
                 <div className="flex items-center space-x-2 mb-4">
                   <User className="w-4 h-4 text-primary" />
-                  <h4 className="font-semibold">Expert Advice</h4>
+                  <h4 className="font-semibold">Советы экспертов</h4>
                 </div>
                 
                 {expertAdvice.length > 0 ? (
