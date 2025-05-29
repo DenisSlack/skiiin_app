@@ -160,6 +160,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         insights: analysisResult.insights,
         recommendations: analysisResult.insights.recommendations,
         ingredientBreakdown: analysisResult.ingredients,
+        scoring: analysisResult.scoring,
       });
 
       const analysis = await storage.createAnalysis(analysisData);

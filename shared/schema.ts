@@ -64,6 +64,7 @@ export const analyses = pgTable("analyses", {
   insights: jsonb("insights").notNull(), // AI-generated insights
   recommendations: jsonb("recommendations"), // AI recommendations
   ingredientBreakdown: jsonb("ingredient_breakdown").notNull(), // detailed ingredient analysis
+  scoring: jsonb("scoring"), // product scoring data
   createdAt: timestamp("created_at").defaultNow(),
 });
 

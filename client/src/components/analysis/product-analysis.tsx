@@ -22,6 +22,8 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+
+
   // Получаем профиль пользователя
   const { data: user } = useQuery({
     queryKey: ["/api/auth/user"],
