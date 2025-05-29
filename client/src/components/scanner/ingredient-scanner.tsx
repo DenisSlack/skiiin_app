@@ -88,8 +88,15 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
       // Extract text using OCR if not already done
       let text = extractedText;
       if (!text && capturedImage) {
-        text = await extractTextFromImage(capturedImage);
-        setExtractedText(text);
+        console.log("Starting OCR extraction...");
+        try {
+          text = await extractTextFromImage(capturedImage);
+          console.log("OCR completed, text length:", text.length);
+          setExtractedText(text);
+        } catch (ocrError) {
+          console.error("OCR failed:", ocrError);
+          throw ocrError;
+        }
       }
 
       if (text.trim()) {
