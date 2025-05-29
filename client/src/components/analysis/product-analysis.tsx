@@ -175,6 +175,11 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
         </CardContent>
       </Card>
 
+      {/* Product Scoring */}
+      {analysis?.scoring && (
+        <ProductScoring scoring={analysis.scoring} />
+      )}
+
       {/* Key Insights */}
       {insights && (insights.positive?.length > 0 || insights.concerns?.length > 0) && (
         <Card className="border-gray-200">
@@ -198,11 +203,6 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {/* Product Scoring */}
-      {analysis?.scoring && (
-        <ProductScoring scoring={analysis.scoring} />
       )}
 
       {/* Enhanced Analysis Tabs */}
