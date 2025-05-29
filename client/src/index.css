@@ -3,67 +3,81 @@
 @tailwind utilities;
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 20 14.3% 4.1%;
-  --muted: 60 4.8% 95.9%;
-  --muted-foreground: 25 5.3% 44.7%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 20 14.3% 4.1%;
-  --card: 0 0% 100%;
-  --card-foreground: 20 14.3% 4.1%;
-  --border: 20 5.9% 90%;
-  --input: 20 5.9% 90%;
-  --primary: 186 100% 70%; /* #67E8F9 - app accent color */
-  --primary-foreground: 0 0% 100%;
-  --secondary: 60 4.8% 95.9%;
-  --secondary-foreground: 24 9.8% 10%;
-  --accent: 186 100% 70%; /* #67E8F9 */
-  --accent-foreground: 0 0% 100%;
+  /* Новая цветовая палитра */
+  --primary-100: #4CAF50;
+  --primary-200: #2a9235;
+  --primary-300: #005100;
+  --accent-100: #FF5722;
+  --accent-200: #fff3b0;
+  --text-100: #FFFFFF;
+  --text-200: #e0e0e0;
+  --bg-100: #000000;
+  --bg-200: #161616;
+  --bg-300: #2c2c2c;
+
+  /* Преобразование в HSL для совместимости с Tailwind */
+  --background: 0 0% 8.7%; /* bg-200: #161616 */
+  --foreground: 0 0% 100%; /* text-100: white */
+  --muted: 0 0% 17.3%; /* bg-300: #2c2c2c */
+  --muted-foreground: 0 0% 87.8%; /* text-200: #e0e0e0 */
+  --popover: 0 0% 17.3%; /* bg-300: #2c2c2c */
+  --popover-foreground: 0 0% 100%; /* text-100: white */
+  --card: 0 0% 17.3%; /* bg-300: #2c2c2c */
+  --card-foreground: 0 0% 87.8%; /* text-200: #e0e0e0 */
+  --border: 0 0% 25%; /* немного светлее bg-300 */
+  --input: 0 0% 17.3%; /* bg-300: #2c2c2c */
+  --primary: 122 39% 49%; /* primary-100: #4CAF50 */
+  --primary-foreground: 0 0% 100%; /* text-100: white */
+  --secondary: 0 0% 17.3%; /* bg-300: #2c2c2c */
+  --secondary-foreground: 0 0% 87.8%; /* text-200: #e0e0e0 */
+  --accent: 14 91% 57%; /* accent-100: #FF5722 */
+  --accent-foreground: 0 0% 100%; /* text-100: white */
   --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 60 9.1% 97.8%;
-  --ring: 20 14.3% 4.1%;
+  --destructive-foreground: 0 0% 100%;
+  --ring: 122 39% 49%; /* primary-100: #4CAF50 */
   --radius: 0.5rem;
   
-  /* Custom app colors */
-  --app-bg: 0 0% 98%; /* #FAFAFA */
-  --app-gray: 220 14% 96%; /* #F3F4F6 */
-  --app-accent: 186 100% 70%; /* #67E8F9 */
-  --app-text: 217 33% 17%; /* #1F2937 */
-  --app-success: 142 71% 45%; /* #10B981 */
-  --app-warning: 38 92% 50%; /* #F59E0B */
-  --app-error: 0 72% 51%; /* #EF4444 */
+  /* Обновленные цвета приложения */
+  --app-bg: 0 0% 8.7%; /* bg-200: #161616 */
+  --app-gray: 0 0% 17.3%; /* bg-300: #2c2c2c */
+  --app-accent: 122 39% 49%; /* primary-100: #4CAF50 */
+  --app-text: 0 0% 100%; /* text-100: white */
+  --app-success: 122 39% 49%; /* primary-100: #4CAF50 */
+  --app-warning: 14 91% 57%; /* accent-100: #FF5722 */
+  --app-error: 0 72% 51%; /* красный для ошибок */
 }
 
 .dark {
-  --background: 240 10% 3.9%;
-  --foreground: 0 0% 98%;
-  --muted: 240 3.7% 15.9%;
-  --muted-foreground: 240 5% 64.9%;
-  --popover: 240 10% 3.9%;
-  --popover-foreground: 0 0% 98%;
-  --card: 240 10% 3.9%;
-  --card-foreground: 0 0% 98%;
-  --border: 240 3.7% 15.9%;
-  --input: 240 3.7% 15.9%;
-  --primary: 186 100% 70%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 240 3.7% 15.9%;
-  --secondary-foreground: 0 0% 98%;
-  --accent: 186 100% 70%;
-  --accent-foreground: 0 0% 100%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 0 0% 98%;
-  --ring: 240 4.9% 83.9%;
+  /* Темная тема использует новую палитру с более темными оттенками */
+  --background: 0 0% 0%; /* bg-100: black */
+  --foreground: 0 0% 100%; /* text-100: white */
+  --muted: 0 0% 8.7%; /* bg-200: #161616 */
+  --muted-foreground: 0 0% 87.8%; /* text-200: #e0e0e0 */
+  --popover: 0 0% 8.7%; /* bg-200: #161616 */
+  --popover-foreground: 0 0% 100%; /* text-100: white */
+  --card: 0 0% 8.7%; /* bg-200: #161616 */
+  --card-foreground: 0 0% 87.8%; /* text-200: #e0e0e0 */
+  --border: 0 0% 17.3%; /* bg-300: #2c2c2c */
+  --input: 0 0% 8.7%; /* bg-200: #161616 */
+  --primary: 122 39% 49%; /* primary-100: #4CAF50 */
+  --primary-foreground: 0 0% 100%; /* text-100: white */
+  --secondary: 0 0% 8.7%; /* bg-200: #161616 */
+  --secondary-foreground: 0 0% 87.8%; /* text-200: #e0e0e0 */
+  --accent: 14 91% 57%; /* accent-100: #FF5722 */
+  --accent-foreground: 0 0% 100%; /* text-100: white */
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 100%;
+  --ring: 122 39% 49%; /* primary-100: #4CAF50 */
   --radius: 0.5rem;
   
-  /* Dark mode app colors */
-  --app-bg: 240 10% 3.9%;
-  --app-gray: 240 3.7% 15.9%;
-  --app-accent: 186 100% 70%;
-  --app-text: 0 0% 98%;
-  --app-success: 142 71% 45%;
-  --app-warning: 38 92% 50%;
-  --app-error: 0 72% 51%;
+  /* Темные цвета приложения */
+  --app-bg: 0 0% 0%; /* bg-100: black */
+  --app-gray: 0 0% 8.7%; /* bg-200: #161616 */
+  --app-accent: 122 39% 49%; /* primary-100: #4CAF50 */
+  --app-text: 0 0% 100%; /* text-100: white */
+  --app-success: 122 39% 49%; /* primary-100: #4CAF50 */
+  --app-warning: 14 91% 57%; /* accent-100: #FF5722 */
+  --app-error: 0 72% 51%; /* красный для ошибок */
 }
 
 @layer base {
@@ -81,15 +95,50 @@
 
 @layer utilities {
   .app-container {
-    @apply max-w-sm mx-auto bg-white min-h-screen shadow-2xl relative overflow-hidden;
+    @apply max-w-sm mx-auto min-h-screen shadow-2xl relative overflow-hidden;
+    background-color: hsl(var(--app-bg));
+    color: hsl(var(--app-text));
   }
   
   .app-gradient {
-    background: linear-gradient(135deg, hsl(var(--app-accent)), hsl(186 100% 60%));
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)) 40%, hsl(var(--accent)) 100%);
   }
   
   .scan-line {
-    background: linear-gradient(90deg, transparent 0%, hsl(var(--app-accent)) 50%, transparent 100%);
+    background: linear-gradient(90deg, transparent 0%, hsl(var(--primary)) 50%, transparent 100%);
+  }
+  
+  /* Дополнительные утилиты для новой палитры */
+  .bg-primary-100 {
+    background-color: var(--primary-100);
+  }
+  
+  .bg-primary-200 {
+    background-color: var(--primary-200);
+  }
+  
+  .bg-primary-300 {
+    background-color: var(--primary-300);
+  }
+  
+  .bg-accent-100 {
+    background-color: var(--accent-100);
+  }
+  
+  .bg-accent-200 {
+    background-color: var(--accent-200);
+  }
+  
+  .text-primary-100 {
+    color: var(--primary-100);
+  }
+  
+  .text-accent-100 {
+    color: var(--accent-100);
+  }
+  
+  .border-primary-100 {
+    border-color: var(--primary-100);
   }
 }
 
