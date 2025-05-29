@@ -76,14 +76,14 @@ export async function findProductIngredients(productName: string): Promise<strin
         messages: [
           {
             role: "system",
-            content: "Ты эксперт по косметике. Найди точный состав продукта и верни ТОЛЬКО список ингредиентов на английском языке через запятую, без объяснений."
+            content: "Ты эксперт по косметике. Найди ПОЛНЫЙ состав продукта (INCI list) на официальных сайтах брендов, косметических магазинах и базах данных. Верни ВСЕ ингредиенты на английском языке через запятую."
           },
           {
             role: "user",
-            content: `Найди состав продукта ${productName}. Верни только ингредиенты через запятую в формате: Water, Glycerin, Niacinamide. Если не найден, напиши: "Ingredients not available"`
+            content: `Найди полный состав продукта "${productName}". Поищи на официальном сайте бренда, Sephora, Ulta, отзывах, косметических базах данных. Верни ВСЕ ингредиенты в порядке убывания концентрации. Нужен полный список из 10-25 компонентов, не краткое описание. Если полный состав не найден, напиши: "Ingredients not available"`
           }
         ],
-        max_tokens: 300,
+        max_tokens: 500,
         temperature: 0.1,
         top_p: 0.8,
         search_recency_filter: "week",
@@ -372,12 +372,22 @@ ${skinInfo}
     const data = await response.json();
     const text = data.choices[0]?.message?.content?.trim() || "";
     
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error("Invalid response format from Perplexity");
+    try {
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error("No JSON found in response");
+      }
+      
+      return JSON.parse(jsonMatch[0]);
+    } catch (parseError) {
+      console.error("JSON parse error in partner recommendations:", parseError);
+      console.error("Raw response:", text);
+      // Возвращаем базовую структуру при ошибке парсинга
+      return {
+        products: [],
+        reasoning: "Не удалось получить рекомендации из-за ошибки обработки данных"
+      };
     }
-    
-    return JSON.parse(jsonMatch[0]);
   } catch (error) {
     console.error("Error generating partner recommendations:", error);
     throw new Error("Failed to generate partner recommendations");
