@@ -3,7 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Save, Share2, CheckCircle, Info, Star, AlertTriangle } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Save, Share2, CheckCircle, Info, Star, AlertTriangle, Microscope, TrendingUp, User } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -66,6 +67,10 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
   const compatibilityRating = product.compatibilityRating || "unknown";
   const ingredients = product.ingredients || [];
   const insights = analysis?.insights || {};
+  const researchSummary = analysis?.result?.researchSummary;
+  const alternativeProducts = analysis?.result?.alternativeProducts || [];
+  const marketTrends = insights?.marketTrends || [];
+  const expertAdvice = insights?.expertAdvice || [];
 
   return (
     <div className="space-y-6">
@@ -134,38 +139,131 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
         </Card>
       )}
 
-      {/* Ingredient Breakdown */}
+      {/* Enhanced Analysis Tabs */}
       {ingredients.length > 0 && (
         <Card className="border-gray-200">
-          <CardContent className="p-4 space-y-4">
-            <h4 className="font-semibold">Ingredient Analysis</h4>
-            
-            <div className="space-y-3">
-              {ingredients.slice(0, 10).map((ingredient: any, index: number) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">
-                      {typeof ingredient === 'string' ? ingredient : ingredient.name}
-                    </p>
+          <CardContent className="p-4">
+            <Tabs defaultValue="ingredients" className="space-y-4">
+              <TabsList className="grid grid-cols-4 w-full">
+                <TabsTrigger value="ingredients" className="text-xs">Ingredients</TabsTrigger>
+                <TabsTrigger value="research" className="text-xs">Research</TabsTrigger>
+                <TabsTrigger value="trends" className="text-xs">Trends</TabsTrigger>
+                <TabsTrigger value="expert" className="text-xs">Expert</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="ingredients" className="space-y-3">
+                <div className="flex items-center space-x-2 mb-4">
+                  <Microscope className="w-4 h-4 text-primary" />
+                  <h4 className="font-semibold">Ingredient Analysis</h4>
+                </div>
+                
+                {ingredients.slice(0, 10).map((ingredient: any, index: number) => (
+                  <div key={index} className="p-3 bg-gray-50 rounded-lg space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">
+                        {typeof ingredient === 'string' ? ingredient : ingredient.name}
+                      </p>
+                      <div className="flex items-center space-x-2">
+                        <div className={`w-2 h-2 rounded-full ${getIngredientSafetyColor(ingredient.safetyRating || 'safe')}`}></div>
+                        <span className="text-xs font-medium text-gray-600 capitalize">
+                          {ingredient.safetyRating || 'Safe'}
+                        </span>
+                      </div>
+                    </div>
+                    
                     {ingredient.purpose && (
                       <p className="text-xs text-gray-600">{ingredient.purpose}</p>
                     )}
+                    
+                    {ingredient.scientificResearch && (
+                      <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
+                        <strong>Research:</strong> {ingredient.scientificResearch.slice(0, 120)}...
+                      </div>
+                    )}
+                    
+                    {ingredient.expertOpinion && (
+                      <div className="text-xs text-purple-600 bg-purple-50 p-2 rounded">
+                        <strong>Expert Opinion:</strong> {ingredient.expertOpinion.slice(0, 120)}...
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-2 h-2 rounded-full ${getIngredientSafetyColor(ingredient.safetyRating || 'safe')}`}></div>
-                    <span className="text-xs font-medium text-gray-600 capitalize">
-                      {ingredient.safetyRating || 'Safe'}
-                    </span>
-                  </div>
+                ))}
+                
+                {ingredients.length > 10 && (
+                  <p className="text-xs text-gray-500 text-center">
+                    And {ingredients.length - 10} more ingredients...
+                  </p>
+                )}
+              </TabsContent>
+
+              <TabsContent value="research" className="space-y-3">
+                <div className="flex items-center space-x-2 mb-4">
+                  <Microscope className="w-4 h-4 text-primary" />
+                  <h4 className="font-semibold">Scientific Research</h4>
                 </div>
-              ))}
-              
-              {ingredients.length > 10 && (
-                <p className="text-xs text-gray-500 text-center">
-                  And {ingredients.length - 10} more ingredients...
-                </p>
-              )}
-            </div>
+                
+                {researchSummary ? (
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-800">{researchSummary}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-600">Research summary not available for this analysis.</p>
+                )}
+                
+                {alternativeProducts.length > 0 && (
+                  <div className="space-y-2">
+                    <h5 className="text-sm font-medium">Alternative Products</h5>
+                    <div className="space-y-1">
+                      {alternativeProducts.slice(0, 3).map((alt: string, index: number) => (
+                        <div key={index} className="text-xs p-2 bg-green-50 rounded border-l-2 border-green-400">
+                          {alt}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="trends" className="space-y-3">
+                <div className="flex items-center space-x-2 mb-4">
+                  <TrendingUp className="w-4 h-4 text-primary" />
+                  <h4 className="font-semibold">Market Trends</h4>
+                </div>
+                
+                {marketTrends.length > 0 ? (
+                  <div className="space-y-2">
+                    {marketTrends.map((trend: string, index: number) => (
+                      <div key={index} className="flex items-start space-x-2 p-3 bg-orange-50 rounded-lg">
+                        <TrendingUp className="w-3 h-3 text-orange-500 mt-1 flex-shrink-0" />
+                        <p className="text-sm text-orange-800">{trend}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-600">Market trend data not available for this analysis.</p>
+                )}
+              </TabsContent>
+
+              <TabsContent value="expert" className="space-y-3">
+                <div className="flex items-center space-x-2 mb-4">
+                  <User className="w-4 h-4 text-primary" />
+                  <h4 className="font-semibold">Expert Advice</h4>
+                </div>
+                
+                {expertAdvice.length > 0 ? (
+                  <div className="space-y-2">
+                    {expertAdvice.map((advice: string, index: number) => (
+                      <div key={index} className="flex items-start space-x-2 p-3 bg-purple-50 rounded-lg">
+                        <User className="w-3 h-3 text-purple-500 mt-1 flex-shrink-0" />
+                        <p className="text-sm text-purple-800">{advice}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-600">Expert advice not available for this analysis.</p>
+                )}
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       )}

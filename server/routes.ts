@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { analyzeIngredients, extractIngredientsFromText, generateProductRecommendations } from "./openai";
+import { analyzeIngredientsWithGemini, getProductRecommendationsWithGemini, researchIngredientSafety } from "./gemini";
 import { insertProductSchema, insertAnalysisSchema, updateSkinProfileSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -113,19 +114,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         preferences: (user.preferences as string[]) || [],
       } : undefined;
 
-      // Analyze ingredients using AI
-      const analysisResult = await analyzeIngredients(ingredientList, skinProfile);
+      // Get product details
+      const product = await storage.getProduct(productId);
+      if (!product || product.userId !== userId) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      let analysisResult;
+      
+      try {
+        // Try enhanced analysis with Gemini first
+        analysisResult = await analyzeIngredientsWithGemini(ingredientList, product.name, skinProfile);
+        
+        // Add additional research for key ingredients
+        const topIngredients = analysisResult.ingredients.slice(0, 3);
+        for (const ingredient of topIngredients) {
+          try {
+            const safetyResearch = await researchIngredientSafety(ingredient.name, skinProfile?.skinType);
+            ingredient.scientificResearch = safetyResearch.safetyProfile;
+            ingredient.expertOpinion = safetyResearch.expertOpinions.join(' ');
+          } catch (researchError) {
+            console.log(`Could not get additional research for ${ingredient.name}`);
+          }
+        }
+      } catch (geminiError) {
+        console.error("Gemini analysis failed, falling back to OpenAI:", geminiError);
+        // Fallback to OpenAI if Gemini fails
+        const openAIResult = await analyzeIngredients(ingredientList, skinProfile);
+        analysisResult = {
+          ...openAIResult,
+          researchSummary: "Analysis completed with alternative AI service",
+          alternativeProducts: [],
+        };
+      }
 
       // Update product with compatibility score
-      const product = await storage.getProduct(productId);
-      if (product && product.userId === userId) {
-        await storage.createProduct({
-          ...product,
-          compatibilityScore: analysisResult.compatibilityScore,
-          compatibilityRating: analysisResult.compatibilityRating,
-          ingredients: analysisResult.ingredients,
-        });
-      }
+      await storage.createProduct({
+        ...product,
+        compatibilityScore: analysisResult.compatibilityScore,
+        compatibilityRating: analysisResult.compatibilityRating,
+        ingredients: analysisResult.ingredients,
+      });
 
       // Save analysis
       const analysisData = insertAnalysisSchema.parse({
@@ -194,11 +223,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         preferences: (user.preferences as string[]) || [],
       };
 
-      const recommendations = await generateProductRecommendations(skinProfile, products);
+      let recommendations;
+      
+      try {
+        // Try enhanced recommendations with Gemini first
+        recommendations = await getProductRecommendationsWithGemini(skinProfile, products);
+      } catch (geminiError) {
+        console.error("Gemini recommendations failed, falling back to OpenAI:", geminiError);
+        // Fallback to OpenAI
+        const fallbackRecs = await generateProductRecommendations(skinProfile, products);
+        recommendations = {
+          ...fallbackRecs,
+          marketInsights: ["Market insights currently unavailable"]
+        };
+      }
+
       res.json(recommendations);
     } catch (error) {
       console.error("Error generating recommendations:", error);
       res.status(500).json({ message: "Failed to generate recommendations" });
+    }
+  });
+
+  // Enhanced ingredient research endpoint
+  app.post('/api/ingredient-research', isAuthenticated, async (req: any, res) => {
+    try {
+      const { ingredientName, skinType } = req.body;
+      
+      if (!ingredientName) {
+        return res.status(400).json({ message: "Ingredient name is required" });
+      }
+
+      const research = await researchIngredientSafety(ingredientName, skinType);
+      res.json(research);
+    } catch (error) {
+      console.error("Error researching ingredient:", error);
+      res.status(500).json({ message: "Failed to research ingredient" });
     }
   });
 
