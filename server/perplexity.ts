@@ -105,41 +105,69 @@ export async function findProductIngredients(productName: string): Promise<strin
     // Извлекаем список ингредиентов из ответа
     let ingredients = rawResponse;
     
-    // Ищем строки с ингредиентами (строки с дефисами или в кавычках)
+    // Пытаемся найти ингредиенты разными способами
+    let ingredientLines: string[] = [];
     const lines = rawResponse.split('\n');
-    const ingredientLines = [];
     
+    // Способ 1: Строки с дефисами
     for (const line of lines) {
-      // Ищем строки, которые начинаются с дефиса и содержат ингредиенты в верхнем регистре
-      if (line.match(/^\s*-\s*[A-Z][A-Z\s\/\(\)]+$/)) {
+      if (line.match(/^\s*-\s*[A-Za-z][A-Za-z\s\/\(\)]+$/)) {
         const clean = line.replace(/^\s*-\s*/, '').trim();
-        if (clean.length > 2) {
+        if (clean.length > 2 && !clean.toLowerCase().includes('here is') && !clean.toLowerCase().includes('you would')) {
           ingredientLines.push(clean);
         }
       }
     }
     
-    if (ingredientLines.length >= 5) {
-      // Если нашли достаточно ингредиентов в списке, используем их
+    // Способ 2: Если не нашли достаточно через дефисы, ищем списки через запятые
+    if (ingredientLines.length < 5) {
+      // Ищем все возможные списки ингредиентов через запятые
+      const patterns = [
+        /([A-Z][A-Za-z\s\/\(\)]+(?:,\s*[A-Z][A-Za-z\s\/\(\)]+){4,})/g,
+        /([A-Za-z][A-Za-z\s\/\(\)]+(?:,\s*[A-Za-z][A-Za-z\s\/\(\)]+){4,})/g
+      ];
+      
+      for (const pattern of patterns) {
+        const matches = rawResponse.match(pattern);
+        if (matches && matches.length > 0) {
+          const longestMatch = matches.reduce((longest: string, current: string) => 
+            current.length > longest.length ? current : longest, ""
+          );
+          
+          if (longestMatch) {
+            ingredientLines = longestMatch.split(',').map(ing => ing.trim());
+            break;
+          }
+        }
+      }
+    }
+    
+    // Способ 3: Если ничего не нашли, ищем любые слова похожие на ингредиенты
+    if (ingredientLines.length < 3) {
+      const commonIngredients = ['Water', 'Glycerin', 'Dimethicone', 'Niacinamide', 'Hyaluronic', 'Ceramide', 'Cholesterol', 'Phenoxyethanol'];
+      const foundIngredients: string[] = [];
+      
+      for (const ingredient of commonIngredients) {
+        if (rawResponse.includes(ingredient)) {
+          foundIngredients.push(ingredient);
+        }
+      }
+      
+      if (foundIngredients.length >= 3) {
+        ingredientLines = foundIngredients;
+      }
+    }
+    
+    if (ingredientLines.length >= 3) {
       ingredients = ingredientLines.join(', ');
     } else {
-      // Иначе ищем непрерывный список через запятые
-      const commaPattern = /([A-Z][A-Z\s\/\(\)]+(?:,\s*[A-Z][A-Z\s\/\(\)]+){4,})/g;
-      const matches = rawResponse.match(commaPattern);
-      
-      if (matches && matches.length > 0) {
-        ingredients = matches.reduce((longest: string, current: string) => 
-          current.length > longest.length ? current : longest, ""
-        );
-      } else {
-        console.log(`No valid ingredient pattern found for ${productName}`);
-        return "";
-      }
+      console.log(`No valid ingredient pattern found for ${productName}`);
+      return "";
     }
     
     // Финальная очистка
     ingredients = ingredients
-      .replace(/^[^A-Z]*/, '') // Убираем все до первого ингредиента в верхнем регистре
+      .replace(/^[^A-Za-z]*/, '') // Убираем все до первого ингредиента
       .replace(/[^A-Za-z\s\/\(\),]*$/, '') // Убираем лишние символы в конце
       .trim();
     
