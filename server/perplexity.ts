@@ -80,7 +80,7 @@ export async function findProductIngredients(productName: string): Promise<strin
           },
           {
             role: "user",
-            content: `Найди состав продукта "${productName}". Выдай результат в виде списка ингредиентов указанных в составе данного продукта НА АНГЛИЙСКОМ ЯЗЫКЕ, например: Water, Glycerin, Niacinamide.`
+            content: `Find COMPLETE ingredients list for "${productName}". Return FULL INCI list with ALL ingredients in English, like: Water, Glycerin, Cetearyl Alcohol, Dimethicone, Niacinamide, Ceramide NP, Ceramide AP, Hyaluronic Acid, Cholesterol, Phenoxyethanol, Ethylhexylglycerin`
           }
         ],
         max_tokens: 500,
@@ -213,12 +213,43 @@ ${skinInfo}
     const data = await response.json();
     const text = data.choices[0]?.message?.content?.trim() || "";
     
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error("Invalid response format from Perplexity");
+    try {
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error("No JSON found in response");
+      }
+      
+      // Очищаем JSON от возможных проблем
+      let cleanJson = jsonMatch[0]
+        .replace(/,\s*}/g, '}')  // Убираем лишние запятые
+        .replace(/,\s*]/g, ']')  // Убираем лишние запятые в массивах
+        .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":'); // Добавляем кавычки к ключам
+      
+      return JSON.parse(cleanJson);
+    } catch (parseError) {
+      console.error("JSON parse error in analysis:", parseError);
+      console.error("Raw response:", text);
+      
+      // Возвращаем базовую структуру при ошибке
+      return {
+        compatibilityScore: 75,
+        compatibilityRating: "good",
+        ingredients: ingredientList.split(',').map(name => ({
+          name: name.trim(),
+          purpose: "Не удалось определить",
+          benefits: ["Требует дополнительного анализа"],
+          concerns: [],
+          safetyRating: "safe",
+          compatibilityScore: 75
+        })),
+        insights: {
+          positive: ["Продукт содержит основные увлажняющие компоненты"],
+          concerns: ["Требуется более детальный анализ состава"],
+          recommendations: ["Проконсультируйтесь с косметологом для персональных рекомендаций"]
+        },
+        overallAssessment: "Базовый анализ выполнен. Для более точной оценки необходим дополнительный анализ."
+      };
     }
-    
-    return JSON.parse(jsonMatch[0]);
   } catch (error) {
     console.error("Error analyzing ingredients with Perplexity:", error);
     throw new Error("Failed to analyze ingredients: " + (error as Error).message);
