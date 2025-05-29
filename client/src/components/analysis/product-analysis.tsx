@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,13 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
       setPersonalRecommendation(data.recommendation);
     }
   });
+
+  // Автоматически загружаем персональную рекомендацию при загрузке компонента
+  useEffect(() => {
+    if (user && product && analysis && !personalRecommendation) {
+      getPersonalRecommendation.mutate();
+    }
+  }, [user, product, analysis]);
 
   // Мутация для получения отзывов пользователей
   const getUserReviews = useMutation({
@@ -374,15 +381,9 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
         <CardContent className="p-4 space-y-4">
           <div className="flex items-center justify-between">
             <h4 className="font-semibold">Personal Recommendations</h4>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs"
-              onClick={() => getPersonalRecommendation.mutate()}
-              disabled={getPersonalRecommendation.isPending}
-            >
-              {getPersonalRecommendation.isPending ? "Loading..." : "Get Personal Advice"}
-            </Button>
+            {getPersonalRecommendation.isPending && (
+              <div className="text-xs text-gray-500">Loading personal advice...</div>
+            )}
           </div>
           
           {/* Персональная рекомендация */}
