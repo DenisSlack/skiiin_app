@@ -98,17 +98,50 @@ export async function findProductIngredients(productName: string): Promise<strin
     }
 
     const data = await response.json();
-    let ingredients = data.choices[0]?.message?.content?.trim() || "";
+    let rawResponse = data.choices[0]?.message?.content?.trim() || "";
     
-    console.log(`Raw response for ${productName}:`, ingredients);
+    console.log(`Raw response for ${productName}:`, rawResponse);
     
-    if (ingredients.includes("не найден") || 
-        ingredients.includes("not found") || 
-        ingredients.includes("Ingredients not available") ||
-        ingredients.length < 10) {
+    // Извлекаем фактический список ингредиентов из ответа
+    let ingredients = "";
+    
+    // Ищем списки ингредиентов в различных форматах
+    const patterns = [
+      // Список с тире
+      /[-•]\s*([A-Za-z][A-Za-z\s\(\),]+(?:\n[-•]\s*[A-Za-z][A-Za-z\s\(\),]+)*)/g,
+      // Список через запятые в скобках или после двоеточия
+      /(?:состав[:\s]*|ingredients[:\s]*|включает[:\s]*)((?:[A-Za-z][A-Za-z\s\(\)]*,\s*)*[A-Za-z][A-Za-z\s\(\)]*)/gi,
+      // Прямой список через запятые
+      /([A-Za-z][A-Za-z\s\(\)]*(?:,\s*[A-Za-z][A-Za-z\s\(\)]*){4,})/g
+    ];
+    
+    for (const pattern of patterns) {
+      const matches = rawResponse.match(pattern);
+      if (matches) {
+        for (const match of matches) {
+          // Очищаем от префиксов и форматирования
+          let cleaned = match
+            .replace(/[-•]\s*/g, ', ')
+            .replace(/(?:состав[:\s]*|ingredients[:\s]*|включает[:\s]*)/gi, '')
+            .trim();
+          
+          // Проверяем что это список ингредиентов
+          if (cleaned.split(',').length >= 4 && 
+              /water|aqua|glycerin|alcohol|acid|oil/i.test(cleaned)) {
+            ingredients = cleaned;
+            break;
+          }
+        }
+        if (ingredients) break;
+      }
+    }
+    
+    if (!ingredients || ingredients.length < 20) {
+      console.log(`No valid ingredients found for ${productName}`);
       return "";
     }
     
+    console.log(`Extracted ingredients for ${productName}:`, ingredients);
     return ingredients;
   } catch (error) {
     console.error("Error finding product ingredients via Perplexity:", error);
