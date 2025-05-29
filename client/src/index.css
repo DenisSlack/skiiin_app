@@ -3,81 +3,81 @@
 @tailwind utilities;
 
 :root {
-  /* Новая цветовая палитра */
-  --primary-100: #4CAF50;
-  --primary-200: #2a9235;
-  --primary-300: #005100;
-  --accent-100: #FF5722;
-  --accent-200: #fff3b0;
-  --text-100: #FFFFFF;
-  --text-200: #e0e0e0;
-  --bg-100: #000000;
-  --bg-200: #161616;
-  --bg-300: #2c2c2c;
+  /* Новая светлая цветовая палитра */
+  --primary-100: #3CB371;
+  --primary-200: #0d9656;
+  --primary-300: #00541c;
+  --accent-100: #FF6347;
+  --accent-200: #8d0000;
+  --text-100: #333333;
+  --text-200: #5c5c5c;
+  --bg-100: #FFFFFF;
+  --bg-200: #f5f5f5;
+  --bg-300: #cccccc;
 
   /* Преобразование в HSL для совместимости с Tailwind */
-  --background: 0 0% 8.7%; /* bg-200: #161616 */
-  --foreground: 0 0% 100%; /* text-100: white */
-  --muted: 0 0% 17.3%; /* bg-300: #2c2c2c */
-  --muted-foreground: 0 0% 87.8%; /* text-200: #e0e0e0 */
-  --popover: 0 0% 17.3%; /* bg-300: #2c2c2c */
-  --popover-foreground: 0 0% 100%; /* text-100: white */
-  --card: 0 0% 17.3%; /* bg-300: #2c2c2c */
-  --card-foreground: 0 0% 87.8%; /* text-200: #e0e0e0 */
-  --border: 0 0% 25%; /* немного светлее bg-300 */
-  --input: 0 0% 17.3%; /* bg-300: #2c2c2c */
-  --primary: 122 39% 49%; /* primary-100: #4CAF50 */
-  --primary-foreground: 0 0% 100%; /* text-100: white */
-  --secondary: 0 0% 17.3%; /* bg-300: #2c2c2c */
-  --secondary-foreground: 0 0% 87.8%; /* text-200: #e0e0e0 */
-  --accent: 14 91% 57%; /* accent-100: #FF5722 */
-  --accent-foreground: 0 0% 100%; /* text-100: white */
-  --destructive: 0 84.2% 60.2%;
+  --background: 0 0% 100%; /* bg-100: white */
+  --foreground: 0 0% 20%; /* text-100: #333333 */
+  --muted: 0 0% 96%; /* bg-200: #f5f5f5 */
+  --muted-foreground: 0 0% 36%; /* text-200: #5c5c5c */
+  --popover: 0 0% 100%; /* bg-100: white */
+  --popover-foreground: 0 0% 20%; /* text-100: #333333 */
+  --card: 0 0% 100%; /* bg-100: white */
+  --card-foreground: 0 0% 20%; /* text-100: #333333 */
+  --border: 0 0% 80%; /* bg-300: #cccccc */
+  --input: 0 0% 96%; /* bg-200: #f5f5f5 */
+  --primary: 146 43% 51%; /* primary-100: #3CB371 */
+  --primary-foreground: 0 0% 100%; /* white */
+  --secondary: 0 0% 96%; /* bg-200: #f5f5f5 */
+  --secondary-foreground: 0 0% 20%; /* text-100: #333333 */
+  --accent: 9 100% 64%; /* accent-100: #FF6347 */
+  --accent-foreground: 0 0% 100%; /* white */
+  --destructive: 0 100% 28%; /* accent-200: #8d0000 */
   --destructive-foreground: 0 0% 100%;
-  --ring: 122 39% 49%; /* primary-100: #4CAF50 */
+  --ring: 146 43% 51%; /* primary-100: #3CB371 */
   --radius: 0.5rem;
   
   /* Обновленные цвета приложения */
-  --app-bg: 0 0% 8.7%; /* bg-200: #161616 */
-  --app-gray: 0 0% 17.3%; /* bg-300: #2c2c2c */
-  --app-accent: 122 39% 49%; /* primary-100: #4CAF50 */
-  --app-text: 0 0% 100%; /* text-100: white */
-  --app-success: 122 39% 49%; /* primary-100: #4CAF50 */
-  --app-warning: 14 91% 57%; /* accent-100: #FF5722 */
-  --app-error: 0 72% 51%; /* красный для ошибок */
+  --app-bg: 0 0% 100%; /* bg-100: white */
+  --app-gray: 0 0% 96%; /* bg-200: #f5f5f5 */
+  --app-accent: 146 43% 51%; /* primary-100: #3CB371 */
+  --app-text: 0 0% 20%; /* text-100: #333333 */
+  --app-success: 146 43% 51%; /* primary-100: #3CB371 */
+  --app-warning: 9 100% 64%; /* accent-100: #FF6347 */
+  --app-error: 0 100% 28%; /* accent-200: #8d0000 */
 }
 
 .dark {
-  /* Темная тема использует новую палитру с более темными оттенками */
-  --background: 0 0% 0%; /* bg-100: black */
-  --foreground: 0 0% 100%; /* text-100: white */
-  --muted: 0 0% 8.7%; /* bg-200: #161616 */
-  --muted-foreground: 0 0% 87.8%; /* text-200: #e0e0e0 */
-  --popover: 0 0% 8.7%; /* bg-200: #161616 */
-  --popover-foreground: 0 0% 100%; /* text-100: white */
-  --card: 0 0% 8.7%; /* bg-200: #161616 */
-  --card-foreground: 0 0% 87.8%; /* text-200: #e0e0e0 */
-  --border: 0 0% 17.3%; /* bg-300: #2c2c2c */
-  --input: 0 0% 8.7%; /* bg-200: #161616 */
-  --primary: 122 39% 49%; /* primary-100: #4CAF50 */
-  --primary-foreground: 0 0% 100%; /* text-100: white */
-  --secondary: 0 0% 8.7%; /* bg-200: #161616 */
-  --secondary-foreground: 0 0% 87.8%; /* text-200: #e0e0e0 */
-  --accent: 14 91% 57%; /* accent-100: #FF5722 */
-  --accent-foreground: 0 0% 100%; /* text-100: white */
-  --destructive: 0 84.2% 60.2%;
+  /* Темная тема с инвертированными цветами новой палитры */
+  --background: 0 0% 7%; /* темный фон */
+  --foreground: 0 0% 98%; /* светлый текст */
+  --muted: 0 0% 15%; /* темно-серый */
+  --muted-foreground: 0 0% 65%; /* серый текст */
+  --popover: 0 0% 7%; /* темный фон */
+  --popover-foreground: 0 0% 98%; /* светлый текст */
+  --card: 0 0% 10%; /* темно-серый */
+  --card-foreground: 0 0% 95%; /* светлый текст */
+  --border: 0 0% 25%; /* границы */
+  --input: 0 0% 15%; /* поля ввода */
+  --primary: 146 43% 51%; /* primary-100: #3CB371 */
+  --primary-foreground: 0 0% 100%; /* белый текст */
+  --secondary: 0 0% 15%; /* темно-серый */
+  --secondary-foreground: 0 0% 95%; /* светлый текст */
+  --accent: 9 100% 64%; /* accent-100: #FF6347 */
+  --accent-foreground: 0 0% 100%; /* белый текст */
+  --destructive: 0 100% 35%; /* темнее красный */
   --destructive-foreground: 0 0% 100%;
-  --ring: 122 39% 49%; /* primary-100: #4CAF50 */
+  --ring: 146 43% 51%; /* primary-100: #3CB371 */
   --radius: 0.5rem;
   
   /* Темные цвета приложения */
-  --app-bg: 0 0% 0%; /* bg-100: black */
-  --app-gray: 0 0% 8.7%; /* bg-200: #161616 */
-  --app-accent: 122 39% 49%; /* primary-100: #4CAF50 */
-  --app-text: 0 0% 100%; /* text-100: white */
-  --app-success: 122 39% 49%; /* primary-100: #4CAF50 */
-  --app-warning: 14 91% 57%; /* accent-100: #FF5722 */
-  --app-error: 0 72% 51%; /* красный для ошибок */
+  --app-bg: 0 0% 7%; /* темный фон */
+  --app-gray: 0 0% 15%; /* темно-серый */
+  --app-accent: 146 43% 51%; /* primary-100: #3CB371 */
+  --app-text: 0 0% 98%; /* светлый текст */
+  --app-success: 146 43% 51%; /* primary-100: #3CB371 */
+  --app-warning: 9 100% 64%; /* accent-100: #FF6347 */
+  --app-error: 0 100% 35%; /* темнее красный */
 }
 
 @layer base {
@@ -108,37 +108,41 @@
     background: linear-gradient(90deg, transparent 0%, hsl(var(--primary)) 50%, transparent 100%);
   }
   
-  /* Дополнительные утилиты для новой палитры */
+  /* Дополнительные утилиты для новой светлой палитры */
   .bg-primary-100 {
-    background-color: var(--primary-100);
+    background-color: var(--primary-100); /* #3CB371 */
   }
   
   .bg-primary-200 {
-    background-color: var(--primary-200);
+    background-color: var(--primary-200); /* #0d9656 */
   }
   
   .bg-primary-300 {
-    background-color: var(--primary-300);
+    background-color: var(--primary-300); /* #00541c */
   }
   
   .bg-accent-100 {
-    background-color: var(--accent-100);
+    background-color: var(--accent-100); /* #FF6347 */
   }
   
   .bg-accent-200 {
-    background-color: var(--accent-200);
+    background-color: var(--accent-200); /* #8d0000 */
   }
   
   .text-primary-100 {
-    color: var(--primary-100);
+    color: var(--primary-100); /* #3CB371 */
   }
   
   .text-accent-100 {
-    color: var(--accent-100);
+    color: var(--accent-100); /* #FF6347 */
   }
   
   .border-primary-100 {
-    border-color: var(--primary-100);
+    border-color: var(--primary-100); /* #3CB371 */
+  }
+  
+  .border-accent-100 {
+    border-color: var(--accent-100); /* #FF6347 */
   }
 }
 
