@@ -74,6 +74,7 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
   }, [handleStartCamera]);
 
   const handleConfirm = useCallback(async () => {
+    alert("Кнопка нажата!"); // Временный тест
     console.log("handleConfirm called");
     if (!capturedImage) {
       console.log("No captured image, returning");
