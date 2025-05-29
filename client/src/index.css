@@ -63,9 +63,9 @@
   --primary-foreground: 0 0% 100%; /* белый текст */
   --secondary: 0 0% 15%; /* темно-серый */
   --secondary-foreground: 0 0% 95%; /* светлый текст */
-  --accent: 334 65% 58%; /* accent-100: #E1477A */
+  --accent: 275 25% 50%; /* accent-100: #8B5A9F */
   --accent-foreground: 0 0% 100%; /* белый текст */
-  --destructive: 336 71% 43%; /* accent-200: #B8205C */
+  --destructive: 275 28% 34%; /* accent-200: #5D3E70 */
   --destructive-foreground: 0 0% 100%;
   --ring: 146 43% 51%; /* primary-100: #3CB371 */
   --radius: 0.5rem;
@@ -76,8 +76,8 @@
   --app-accent: 146 43% 51%; /* primary-100: #3CB371 */
   --app-text: 0 0% 98%; /* светлый текст */
   --app-success: 146 43% 51%; /* primary-100: #3CB371 */
-  --app-warning: 334 65% 58%; /* accent-100: #E1477A */
-  --app-error: 336 71% 43%; /* accent-200: #B8205C */
+  --app-warning: 275 25% 50%; /* accent-100: #8B5A9F */
+  --app-error: 275 28% 34%; /* accent-200: #5D3E70 */
 }
 
 @layer base {
