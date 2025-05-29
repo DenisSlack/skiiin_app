@@ -1,7 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { scoreProduct, scoreIngredient, ProductScore } from "./scoring";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export interface EnhancedIngredientAnalysis {
   name: string;
@@ -42,7 +39,7 @@ export interface SkinProfile {
   preferences: string[];
 }
 
-export async function analyzeIngredientsWithGemini(
+export async function analyzeIngredientsWithPerplexity(
   ingredientList: string,
   productName: string,
   skinProfile?: SkinProfile
@@ -577,16 +574,26 @@ export async function researchIngredientSafety(
   skinType?: string
 ): Promise<{ safetyProfile: string; recentStudies: string[]; expertOpinions: string[] }> {
   try {
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash-8b",
-      generationConfig: {
-        temperature: 0.1,
-        topP: 0.8,
-        maxOutputTokens: 400,
-      }
-    });
+    if (!process.env.PERPLEXITY_API_KEY) {
+      throw new Error("PERPLEXITY_API_KEY не настроен");
+    }
 
-    const prompt = `Исследуй профиль безопасности косметического ингредиента "${ingredientName}"${skinType ? ` специально для кожи типа ${skinType}` : ''}.
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: "llama-3.1-sonar-small-128k-online",
+        messages: [
+          {
+            role: "system",
+            content: "Ты эксперт-дерматолог с доступом к последним научным исследованиям. Отвечай только на русском языке."
+          },
+          {
+            role: "user",
+            content: `Исследуй профиль безопасности косметического ингредиента "${ingredientName}"${skinType ? ` специально для кожи типа ${skinType}` : ''}.
 
 Предоставь на русском языке:
 1. Текущую оценку безопасности на основе последних исследований
@@ -602,23 +609,48 @@ export async function researchIngredientSafety(
   "safetyProfile": "комплексная оценка безопасности на русском языке",
   "recentStudies": ["результаты недавних исследований на русском языке"],
   "expertOpinions": ["мнения экспертов-дерматологов на русском языке"]
-}`;
+}`
+          }
+        ],
+        max_tokens: 600,
+        temperature: 0.1,
+        top_p: 0.8,
+        search_recency_filter: "month",
+        return_images: false,
+        return_related_questions: false,
+        stream: false
+      })
+    });
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    if (!response.ok) {
+      throw new Error(`Perplexity API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    let text = data.choices[0]?.message?.content?.trim() || "";
+    
+    // Очищаем от markdown
+    text = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
     
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       console.log("No JSON found in response:", text);
-      return "";
+      return {
+        safetyProfile: "Данные о безопасности недоступны",
+        recentStudies: [],
+        expertOpinions: []
+      };
     }
     
     try {
       return JSON.parse(jsonMatch[0]);
     } catch (parseError) {
       console.log("Failed to parse JSON:", jsonMatch[0]);
-      return "";
+      return {
+        safetyProfile: "Ошибка обработки данных о безопасности",
+        recentStudies: [],
+        expertOpinions: []
+      };
     }
   } catch (error) {
     console.error("Error researching ingredient safety:", error);

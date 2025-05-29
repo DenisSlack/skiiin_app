@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { analyzeIngredientsWithGemini, getProductRecommendationsWithGemini, researchIngredientSafety, findProductIngredients, generatePartnerRecommendations, extractIngredientsFromText, findProductImage } from "./gemini";
+import { analyzeIngredientsWithPerplexity, getProductRecommendationsWithGemini, researchIngredientSafety, findProductIngredients, generatePartnerRecommendations, extractIngredientsFromText, findProductImage } from "./gemini";
 import { insertProductSchema, insertAnalysisSchema, updateSkinProfileSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -132,8 +132,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let analysisResult;
       
       try {
-        // Try enhanced analysis with Gemini first
-        analysisResult = await analyzeIngredientsWithGemini(ingredientList, product.name, skinProfile);
+        // Try enhanced analysis with Perplexity first
+        analysisResult = await analyzeIngredientsWithPerplexity(ingredientList, product.name, skinProfile);
         
         // Используем только результаты от Perplexity для обеспечения русскоязычного вывода
         // Дополнительное исследование отключено для сохранения языка интерфейса
