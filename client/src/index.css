@@ -7,8 +7,8 @@
   --primary-100: #3CB371;
   --primary-200: #0d9656;
   --primary-300: #00541c;
-  --accent-100: #FF6347;
-  --accent-200: #8d0000;
+  --accent-100: #8B5A9F;
+  --accent-200: #5D3E70;
   --text-100: #333333;
   --text-200: #5c5c5c;
   --bg-100: #FFFFFF;
@@ -30,9 +30,9 @@
   --primary-foreground: 0 0% 100%; /* white */
   --secondary: 0 0% 96%; /* bg-200: #f5f5f5 */
   --secondary-foreground: 0 0% 20%; /* text-100: #333333 */
-  --accent: 9 100% 64%; /* accent-100: #FF6347 */
+  --accent: 275 25% 50%; /* accent-100: #8B5A9F */
   --accent-foreground: 0 0% 100%; /* white */
-  --destructive: 0 100% 28%; /* accent-200: #8d0000 */
+  --destructive: 275 28% 34%; /* accent-200: #5D3E70 */
   --destructive-foreground: 0 0% 100%;
   --ring: 146 43% 51%; /* primary-100: #3CB371 */
   --radius: 0.5rem;
@@ -43,8 +43,8 @@
   --app-accent: 146 43% 51%; /* primary-100: #3CB371 */
   --app-text: 0 0% 20%; /* text-100: #333333 */
   --app-success: 146 43% 51%; /* primary-100: #3CB371 */
-  --app-warning: 9 100% 64%; /* accent-100: #FF6347 */
-  --app-error: 0 100% 28%; /* accent-200: #8d0000 */
+  --app-warning: 275 25% 50%; /* accent-100: #8B5A9F */
+  --app-error: 275 28% 34%; /* accent-200: #5D3E70 */
 }
 
 .dark {
@@ -63,9 +63,9 @@
   --primary-foreground: 0 0% 100%; /* белый текст */
   --secondary: 0 0% 15%; /* темно-серый */
   --secondary-foreground: 0 0% 95%; /* светлый текст */
-  --accent: 9 100% 64%; /* accent-100: #FF6347 */
+  --accent: 334 65% 58%; /* accent-100: #E1477A */
   --accent-foreground: 0 0% 100%; /* белый текст */
-  --destructive: 0 100% 35%; /* темнее красный */
+  --destructive: 336 71% 43%; /* accent-200: #B8205C */
   --destructive-foreground: 0 0% 100%;
   --ring: 146 43% 51%; /* primary-100: #3CB371 */
   --radius: 0.5rem;
@@ -76,8 +76,8 @@
   --app-accent: 146 43% 51%; /* primary-100: #3CB371 */
   --app-text: 0 0% 98%; /* светлый текст */
   --app-success: 146 43% 51%; /* primary-100: #3CB371 */
-  --app-warning: 9 100% 64%; /* accent-100: #FF6347 */
-  --app-error: 0 100% 35%; /* темнее красный */
+  --app-warning: 334 65% 58%; /* accent-100: #E1477A */
+  --app-error: 336 71% 43%; /* accent-200: #B8205C */
 }
 
 @layer base {
