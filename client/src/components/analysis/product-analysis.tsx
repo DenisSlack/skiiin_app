@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Save, Share2, CheckCircle, Info, Star, AlertTriangle, Microscope, TrendingUp, User, ChevronDown, ChevronUp } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import ProductScoring from "./product-scoring";
 
 interface ProductAnalysisProps {
   product: any;
@@ -195,6 +196,11 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Product Scoring */}
+      {analysis?.scoring && (
+        <ProductScoring scoring={analysis.scoring} />
       )}
 
       {/* Enhanced Analysis Tabs */}

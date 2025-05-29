@@ -186,7 +186,8 @@ ${skinProfileText}
         
         return {
           compatibilityScore: fallbackScore.overall,
-          compatibilityRating: fallbackScore.recommendation,
+          compatibilityRating: fallbackScore.recommendation === "fair" ? "good" : 
+                              fallbackScore.recommendation === "poor" ? "caution" : fallbackScore.recommendation,
           ingredients: [],
           insights: {
             positive: ["Продукт проанализирован"],
@@ -211,7 +212,9 @@ ${skinProfileText}
       ...analysisResult,
       scoring: productScore,
       compatibilityScore: productScore.overall,
-      compatibilityRating: productScore.recommendation
+      compatibilityRating: productScore.recommendation === "fair" ? "good" : 
+                          productScore.recommendation === "poor" ? "caution" : 
+                          productScore.recommendation
     } as EnhancedProductAnalysisResult;
 
     return enhancedResult;
