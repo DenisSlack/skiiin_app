@@ -104,7 +104,15 @@ ${systemPrompt}`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const text = response.text();
+    let text = response.text();
+    
+    // Очищаем от markdown и комментариев
+    text = text
+      .replace(/```json\s*/g, '')
+      .replace(/```\s*/g, '')
+      .replace(/\/\/.*$/gm, '') // убираем однострочные комментарии
+      .replace(/\/\*[\s\S]*?\*\//g, '') // убираем многострочные комментарии
+      .trim();
     
     // Extract JSON from response
     const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -112,7 +120,11 @@ ${systemPrompt}`;
       throw new Error("Invalid response format from Gemini");
     }
     
-    const analysisResult = JSON.parse(jsonMatch[0]);
+    let jsonText = jsonMatch[0];
+    // Дополнительная очистка внутри JSON
+    jsonText = jsonText.replace(/\/\/.*$/gm, '').replace(/,(\s*[}\]])/g, '$1');
+    
+    const analysisResult = JSON.parse(jsonText);
     return analysisResult as EnhancedProductAnalysisResult;
   } catch (error) {
     console.error("Error analyzing ingredients with Gemini:", error);
@@ -202,8 +214,26 @@ export async function extractIngredientsFromText(text: string): Promise<string[]
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const parsed = JSON.parse(response.text());
-    return parsed.ingredients || [];
+    let text = response.text();
+    
+    // Очищаем от markdown и комментариев
+    text = text
+      .replace(/```json\s*/g, '')
+      .replace(/```\s*/g, '')
+      .replace(/\/\/.*$/gm, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .trim();
+    
+    // Ищем JSON объект
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      let jsonText = jsonMatch[0];
+      jsonText = jsonText.replace(/\/\/.*$/gm, '').replace(/,(\s*[}\]])/g, '$1');
+      const parsed = JSON.parse(jsonText);
+      return parsed.ingredients || [];
+    }
+    
+    return [];
   } catch (error) {
     console.error("Error extracting ingredients:", error);
     // Fallback: простое извлечение
