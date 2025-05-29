@@ -105,11 +105,34 @@ export async function findProductIngredients(productName: string): Promise<strin
     // Извлекаем список ингредиентов из ответа
     let ingredients = rawResponse;
     
-    // Убираем лишние фразы если они есть
+    // Извлекаем только чистый список ингредиентов
+    const ingredientPattern = /([A-Za-z][A-Za-z\s\(\)\/\-]*(?:,\s*[A-Za-z][A-Za-z\s\(\)\/\-]*){4,})/g;
+    const matches = rawResponse.match(ingredientPattern);
+    
+    if (matches && matches.length > 0) {
+      // Берем самый длинный найденный список ингредиентов
+      ingredients = matches.reduce((longest, current) => 
+        current.length > longest.length ? current : longest, ""
+      );
+    } else {
+      // Если паттерн не сработал, убираем системные фразы вручную
+      ingredients = rawResponse
+        .replace(/.*(?:состав|ingredients|включает|found in|here is|list)[:\s]*/gi, '')
+        .replace(/^[-•\s]*/gm, '')
+        .replace(/\n/g, ', ')
+        .replace(/for the specific.*$/gi, '')
+        .replace(/you would need.*$/gi, '')
+        .replace(/if you have access.*$/gi, '')
+        .replace(/.*moisturizers[:\s]*/gi, '')
+        .replace(/.*products[:\s]*/gi, '')
+        .replace(/.*there\.$/gi, '')
+        .trim();
+    }
+    
+    // Финальная очистка от служебных фраз
     ingredients = ingredients
-      .replace(/.*(?:состав|ingredients|включает)[:\s]*/gi, '')
-      .replace(/^[-•\s]*/gm, '')
-      .replace(/\n/g, ', ')
+      .replace(/^[^A-Za-z]*/, '') // Убираем все до первого ингредиента
+      .replace(/[^A-Za-z\s\(\)\/\-,]*$/, '') // Убираем все после последнего ингредиента
       .trim();
     
     // Проверяем что получили валидный список
