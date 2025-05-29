@@ -248,22 +248,11 @@ export async function findProductIngredients(productName: string): Promise<strin
         messages: [
           {
             role: "system",
-            content: "You are a cosmetics expert. Return ONLY the clean ingredients list in English without explanations, reasoning or technical information."
+            content: "Ты эксперт по косметике. Найди точный состав продукта и верни ТОЛЬКО список ингредиентов на английском языке через запятую, без объяснений."
           },
           {
             role: "user",
-            content: `Search for the exact ingredients list of cosmetic product "${productName}".
-
-Look for the INCI (International Nomenclature of Cosmetic Ingredients) list on:
-- Official brand websites
-- Beauty retailers (Sephora, Ulta, Douglas, Wildberries, Ozon)
-- Product databases and catalogs
-
-CRITICAL: Return ONLY the ingredients separated by commas. Do not include any explanations, sources, or additional text.
-
-Format: "Water, Glycerin, Niacinamide, Salicylic Acid, Cetyl Alcohol"
-
-If no ingredients found, return: "Ingredients not available"`
+            content: `Найди состав продукта ${productName}. Верни только ингредиенты через запятую в формате: Water, Glycerin, Niacinamide. Если не найден, напиши: "Ingredients not available"`
           }
         ],
         max_tokens: 300,
@@ -341,7 +330,7 @@ If no ingredients found, return: "Ingredients not available"`
             messages: [
               {
                 role: "user",
-                content: `Find cosmetic ingredients for "${productName}". Search beauty websites, brand sites, ingredient databases. Return only ingredient names separated by commas.`
+                content: `Найди состав продукта "${productName}". Поищи на сайтах брендов, в базах косметики. Верни только названия ингредиентов через запятую на английском языке.`
               }
             ],
             max_tokens: 200,
