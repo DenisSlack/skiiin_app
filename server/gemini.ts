@@ -250,7 +250,21 @@ export async function generatePartnerRecommendations(
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    return JSON.parse(response.text());
+    let text = response.text();
+    
+    // Очищаем от markdown форматирования
+    text = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    
+    try {
+      return JSON.parse(text);
+    } catch (parseError) {
+      console.error("Failed to parse JSON:", text);
+      // Возвращаем базовую структуру в случае ошибки
+      return {
+        products: [],
+        reasoning: "Рекомендации временно недоступны"
+      };
+    }
   } catch (error) {
     console.error("Error generating partner recommendations:", error);
     throw new Error("Failed to generate partner recommendations");

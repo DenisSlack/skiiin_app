@@ -150,13 +150,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         analysisResult.partnerRecommendations = { products: [], reasoning: "" };
       }
 
-      // Update product with compatibility score
-      await storage.createProduct({
-        ...product,
-        compatibilityScore: analysisResult.compatibilityScore,
-        compatibilityRating: analysisResult.compatibilityRating,
-        ingredients: analysisResult.ingredients,
-      });
+      // Обновляем продукт с результатами анализа (не создаем новый)
+      // Продукт уже существует, просто сохраняем анализ
 
       // Save analysis
       const analysisData = insertAnalysisSchema.parse({
