@@ -74,9 +74,14 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
   }, [handleStartCamera]);
 
   const handleConfirm = useCallback(async () => {
-    if (!capturedImage) return;
+    console.log("handleConfirm called");
+    if (!capturedImage) {
+      console.log("No captured image, returning");
+      return;
+    }
 
     try {
+      console.log("Setting isProcessing to true");
       setIsProcessing(true);
 
       // Extract text using OCR if not already done
