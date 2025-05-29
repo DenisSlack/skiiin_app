@@ -407,6 +407,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Extract product name from text
+  app.post('/api/extract-product-name', isAuthenticated, async (req: any, res) => {
+    try {
+      const { text } = req.body;
+      
+      if (!text) {
+        return res.status(400).json({ message: "Text is required" });
+      }
+
+      try {
+        const response = await fetch('https://api.perplexity.ai/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: "llama-3.1-sonar-small-128k-online",
+            messages: [
+              {
+                role: "system",
+                content: "Извлеки название косметического продукта из текста. Верни только название продукта без дополнительной информации. Если название не найдено, верни 'Косметический продукт'."
+              },
+              {
+                role: "user",
+                content: `Найди название косметического продукта в этом тексте: ${text}`
+              }
+            ],
+            max_tokens: 50,
+            temperature: 0.1,
+            top_p: 0.8,
+            stream: false
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Perplexity API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        let productName = data.choices[0]?.message?.content?.trim() || "Косметический продукт";
+        
+        // Очищаем результат от лишних символов
+        productName = productName.replace(/['"]/g, '').trim();
+        
+        // Если результат слишком длинный или содержит системную информацию, используем заглушку
+        if (productName.length > 100 || productName.toLowerCase().includes('не найден') || productName.toLowerCase().includes('text')) {
+          productName = "Косметический продукт";
+        }
+
+        res.json({ productName });
+      } catch (error) {
+        console.error("Error extracting product name:", error);
+        res.json({ productName: "Косметический продукт" });
+      }
+    } catch (error) {
+      console.error("Error processing request:", error);
+      res.status(500).json({ message: "Failed to extract product name" });
+    }
+  });
+
   // Recommendations
   app.get('/api/recommendations', isAuthenticated, async (req: any, res) => {
     try {

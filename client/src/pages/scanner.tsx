@@ -122,7 +122,7 @@ export default function Scanner() {
     }
   };
 
-  const handleScanResult = (scannedText: string, extractedIngredients?: string[], capturedImage?: string) => {
+  const handleScanResult = (scannedText: string, extractedIngredients?: string[], capturedImage?: string, detectedProductName?: string) => {
     if (extractedIngredients && extractedIngredients.length > 0) {
       setIngredients(extractedIngredients.join(", "));
     } else {
@@ -132,6 +132,11 @@ export default function Scanner() {
     // Сохраняем захваченное изображение
     if (capturedImage) {
       setProductImage(capturedImage);
+    }
+    
+    // Автоматически заполняем название продукта
+    if (detectedProductName && !productName.trim()) {
+      setProductName(detectedProductName);
     }
     
     setShowCamera(false);

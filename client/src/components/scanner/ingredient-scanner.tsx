@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface IngredientScannerProps {
   onClose: () => void;
-  onResult?: (scannedText: string, extractedIngredients?: string[], capturedImage?: string) => void;
+  onResult?: (scannedText: string, extractedIngredients?: string[], capturedImage?: string, productName?: string) => void;
 }
 
 export default function IngredientScanner({ onClose, onResult }: IngredientScannerProps) {
@@ -65,7 +65,23 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
       if (text.trim()) {
         // Extract ingredients using AI
         const result = await extractIngredientsMutation.mutateAsync(text);
-        onResult?.(text, result.ingredients, capturedImage || undefined);
+        
+        // Try to extract product name from the text
+        let productName = "Косметический продукт";
+        const productNameResponse = await fetch('/api/extract-product-name', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+        
+        if (productNameResponse.ok) {
+          const nameData = await productNameResponse.json();
+          if (nameData.productName && nameData.productName.trim()) {
+            productName = nameData.productName;
+          }
+        }
+        
+        onResult?.(text, result.ingredients, capturedImage || undefined, productName);
       } else {
         toast({
           title: "Текст не найден",
@@ -242,9 +258,16 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
             />
             {isProcessing && (
               <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                <div className="text-center text-white space-y-4">
-                  <div className="w-8 h-8 animate-spin mx-auto border-2 border-white border-t-transparent rounded-full" />
-                  <p>Обработка изображения...</p>
+                <div className="text-center text-white space-y-4 p-6">
+                  <div className="w-12 h-12 animate-spin mx-auto border-3 border-white border-t-transparent rounded-full" />
+                  <div className="space-y-2">
+                    <p className="text-lg font-medium">Анализируем изображение...</p>
+                    <div className="text-sm space-y-1">
+                      <p>• Извлекаем текст с фотографии</p>
+                      <p>• Определяем название продукта</p>
+                      <p>• Находим список ингредиентов</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
