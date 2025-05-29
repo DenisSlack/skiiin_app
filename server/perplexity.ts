@@ -274,46 +274,45 @@ export async function findProductIngredients(productName: string): Promise<strin
     
     console.log(`Raw response for ${productName}:`, ingredients);
     
-    // Clean unwanted phrases
-    const unwantedPhrases = [
-      "Ingredients not available",
-      "Из доступных источников", 
-      "не удалось найти",
-      "Однако",
-      "По информации",
-      "К сожалению",
-      "Unfortunately",
-      "However",
-      "Based on available information",
-      "According to",
-      "Please note",
-      "It should be noted",
-      "I cannot find",
-      "I could not find",
-      "Not available",
-      "Unable to find"
+    // Ищем фактический список ингредиентов в ответе
+    // Сначала пытаемся найти строку с множественными ингредиентами через запятые
+    const ingredientPatterns = [
+      // Ищем списки с запятыми и типичными ингредиентами
+      /([A-Za-z][A-Za-z\s\-\(\)\/]+(?:,\s*[A-Za-z][A-Za-z\s\-\(\)\/]+){3,})/g,
+      // Ищем после двоеточия
+      /:\s*([A-Za-z][A-Za-z\s\-\(\)\/,]+)/g,
+      // Ищем строки начинающиеся с Water, Aqua (типичные первые ингредиенты)
+      /((?:Water|Aqua)[A-Za-z\s\-\(\)\/,]+)/gi
     ];
     
-    const sentences = ingredients.split(/[.!?]\s+/);
-    const cleanSentences = sentences.filter((sentence: string) => {
-      return !unwantedPhrases.some(phrase => 
-        sentence.toLowerCase().includes(phrase.toLowerCase())
-      );
-    });
+    let foundIngredients = "";
     
-    ingredients = cleanSentences.join('. ').trim();
-    
-    if (ingredients.includes(':')) {
-      const parts = ingredients.split(':');
-      ingredients = parts[parts.length - 1].trim();
+    for (const pattern of ingredientPatterns) {
+      const matches = ingredients.match(pattern);
+      if (matches && matches.length > 0) {
+        // Берем самый длинный найденный список
+        foundIngredients = matches.reduce((longest, current) => 
+          current.length > longest.length ? current : longest, ""
+        );
+        if (foundIngredients.length > 20 && foundIngredients.split(',').length >= 3) {
+          break;
+        }
+      }
     }
     
-    if (ingredients.includes("не найден") || 
-        ingredients.includes("not found") || 
-        ingredients.includes("не могу") ||
-        ingredients.includes("cannot") ||
-        ingredients.includes("Ingredients not available") ||
-        ingredients.length < 10) {
+    if (foundIngredients) {
+      ingredients = foundIngredients.replace(/^:?\s*/, '').trim();
+    }
+    
+    // Проверяем качество найденного списка
+    const hasCommas = ingredients.includes(',');
+    const hasTypicalIngredients = /water|aqua|glycerin|alcohol|acid|oil/i.test(ingredients);
+    const minLength = ingredients.length > 15;
+    const notNegativeResponse = !ingredients.toLowerCase().includes("not available") &&
+                                !ingredients.toLowerCase().includes("not found") &&
+                                !ingredients.toLowerCase().includes("не найден");
+    
+    if (!hasCommas || !hasTypicalIngredients || !minLength || !notNegativeResponse) {
       
       console.log(`Primary search failed for ${productName}, trying alternative search...`);
       
@@ -345,20 +344,41 @@ export async function findProductIngredients(productName: string): Promise<strin
           let altIngredients = altData.choices[0]?.message?.content?.trim() || "";
           console.log(`Alternative search result for ${productName}:`, altIngredients);
           
-          // Строгая проверка альтернативного результата - должен быть настоящий список ингредиентов
-          if (altIngredients && 
-              !altIngredients.toLowerCase().includes("not available") &&
-              !altIngredients.toLowerCase().includes("not found") &&
-              !altIngredients.toLowerCase().includes("not provided") &&
-              !altIngredients.toLowerCase().includes("would be best") &&
-              !altIngredients.toLowerCase().includes("check the") &&
-              !altIngredients.toLowerCase().includes("here are some") &&
-              !altIngredients.toLowerCase().includes("might be found") &&
-              !altIngredients.toLowerCase().includes("common") &&
-              altIngredients.length > 10 &&
-              altIngredients.includes(",") &&
-              !altIngredients.includes(".") && // Не должен содержать предложений
-              !altIngredients.includes("(")) { // Не должен содержать объяснений в скобках
+          // Применяем ту же логику поиска ингредиентов
+          const altPatterns = [
+            /([A-Za-z][A-Za-z\s\-\(\)\/]+(?:,\s*[A-Za-z][A-Za-z\s\-\(\)\/]+){3,})/g,
+            /:\s*([A-Za-z][A-Za-z\s\-\(\)\/,]+)/g,
+            /((?:Water|Aqua)[A-Za-z\s\-\(\)\/,]+)/gi
+          ];
+          
+          let altFoundIngredients = "";
+          
+          for (const pattern of altPatterns) {
+            const matches = altIngredients.match(pattern);
+            if (matches && matches.length > 0) {
+              altFoundIngredients = matches.reduce((longest, current) => 
+                current.length > longest.length ? current : longest, ""
+              );
+              if (altFoundIngredients.length > 20 && altFoundIngredients.split(',').length >= 3) {
+                break;
+              }
+            }
+          }
+          
+          if (altFoundIngredients) {
+            altIngredients = altFoundIngredients.replace(/^:?\s*/, '').trim();
+          }
+          
+          // Проверяем качество альтернативного результата
+          const altHasCommas = altIngredients.includes(',');
+          const altHasTypical = /water|aqua|glycerin|alcohol|acid|oil/i.test(altIngredients);
+          const altMinLength = altIngredients.length > 15;
+          const altNotNegative = !altIngredients.toLowerCase().includes("not available") &&
+                                  !altIngredients.toLowerCase().includes("not found") &&
+                                  !altIngredients.toLowerCase().includes("не найден");
+          
+          if (altHasCommas && altHasTypical && altMinLength && altNotNegative) {
+            console.log(`Alternative search found valid ingredients for ${productName}:`, altIngredients);
             return altIngredients;
           }
         }
