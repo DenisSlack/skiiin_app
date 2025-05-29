@@ -297,11 +297,23 @@ export async function findProductIngredients(productName: string): Promise<strin
         messages: [
           {
             role: "system",
-            content: "Ты эксперт по косметике. Найди точный список ингредиентов для запрашиваемого продукта из официальных источников или сайтов производителей."
+            content: "Ты эксперт по косметике. Возвращай ТОЛЬКО чистый список ингредиентов без объяснений, рассуждений или технической информации."
           },
           {
             role: "user",
-            content: `Найди точный полный список ингредиентов (INCI names) для косметического продукта "${productName}". Ищи информацию на официальных сайтах брендов или в базах данных косметики. Верни только список ингредиентов через запятую, без дополнительных объяснений.`
+            content: `Найди состав продукта "${productName}". 
+
+ВЕРНИ ТОЛЬКО: список ингредиентов через запятую
+
+НЕ ДОБАВЛЯЙ:
+- "Из доступных источников..."
+- "Однако..."
+- "По информации..."
+- Любые объяснения или комментарии
+
+Пример правильного ответа: "Water, Glycerin, Niacinamide, Cetyl Alcohol"
+
+Если состав не найден, верни пустую строку.`
           }
         ],
         max_tokens: 500,
@@ -319,7 +331,38 @@ export async function findProductIngredients(productName: string): Promise<strin
     }
 
     const data = await response.json();
-    const ingredients = data.choices[0]?.message?.content?.trim() || "";
+    let ingredients = data.choices[0]?.message?.content?.trim() || "";
+    
+    // Очищаем от технических фраз и объяснений
+    const unwantedPhrases = [
+      "Из доступных источников",
+      "не удалось найти",
+      "Однако",
+      "По информации",
+      "К сожалению",
+      "Unfortunately",
+      "However",
+      "Based on available information",
+      "According to",
+      "Please note",
+      "It should be noted"
+    ];
+    
+    // Удаляем предложения с нежелательными фразами
+    const sentences = ingredients.split(/[.!?]\s+/);
+    const cleanSentences = sentences.filter(sentence => {
+      return !unwantedPhrases.some(phrase => 
+        sentence.toLowerCase().includes(phrase.toLowerCase())
+      );
+    });
+    
+    ingredients = cleanSentences.join('. ').trim();
+    
+    // Извлекаем только часть с ингредиентами (обычно после двоеточия или в конце)
+    if (ingredients.includes(':')) {
+      const parts = ingredients.split(':');
+      ingredients = parts[parts.length - 1].trim();
+    }
     
     // Проверяем, что получили реальный список ингредиентов
     if (ingredients.includes("не найден") || 
