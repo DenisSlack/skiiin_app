@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { analyzeIngredientsWithPerplexity, findProductIngredients, generatePartnerRecommendations, extractIngredientsFromText, findProductImage, getPersonalizedRecommendation } from "./perplexity";
+import { scoreProduct } from "./scoring";
 import { insertProductSchema, insertAnalysisSchema, updateSkinProfileSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -140,6 +141,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (geminiError) {
         console.error("Gemini analysis failed:", geminiError);
         throw new Error("Failed to analyze ingredients with AI service");
+      }
+
+      // Генерируем оценку продукта
+      try {
+        const ingredientNames = analysisResult.ingredients.map((ing: any) => 
+          typeof ing === 'string' ? ing : ing.name
+        );
+        const productScoring = scoreProduct(
+          ingredientNames,
+          product.name,
+          skinProfile
+        );
+        analysisResult.scoring = productScoring;
+      } catch (scoringError) {
+        console.log("Could not generate product scoring:", scoringError);
+        analysisResult.scoring = undefined;
       }
 
       // Генерируем партнерские рекомендации для монетизации
