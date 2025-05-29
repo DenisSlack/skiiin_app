@@ -84,62 +84,62 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
       console.log("Setting isProcessing to true");
       setIsProcessing(true);
 
-      // Send image to server for OCR processing
+      // Extract text using OCR
       let text = extractedText;
       if (!text && capturedImage) {
-        console.log("Sending image to server for OCR processing...");
+        console.log("Starting OCR extraction...");
         try {
-          const ocrResponse = await fetch('/api/ocr-extract', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: capturedImage })
-          });
-          
-          if (!ocrResponse.ok) {
-            throw new Error('OCR processing failed');
-          }
-          
-          const ocrData = await ocrResponse.json();
-          text = ocrData.text || "";
-          console.log("Server OCR completed, text length:", text.length);
+          text = await extractTextFromImage(capturedImage);
+          console.log("OCR completed, text length:", text.length);
           setExtractedText(text);
         } catch (ocrError) {
-          console.error("Server OCR failed:", ocrError);
-          throw ocrError;
+          console.error("OCR failed:", ocrError);
+          toast({
+            title: "Ошибка распознавания текста",
+            description: "Введите состав вручную в текстовое поле ниже",
+            variant: "destructive",
+          });
+          setIsProcessing(false);
+          return;
         }
       }
 
-      if (text.trim()) {
-        // Extract ingredients using AI
-        const result = await extractIngredientsMutation.mutateAsync(text);
-        
-        // Try to extract product name from the text
-        let productName = "Косметический продукт";
-        try {
-          const productNameResponse = await fetch('/api/extract-product-name', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text })
-          });
-          
-          if (productNameResponse.ok) {
-            const nameData = await productNameResponse.json();
-            if (nameData.productName && nameData.productName.trim()) {
-              productName = nameData.productName;
-            }
-          }
-        } catch (nameError) {
-          console.warn("Failed to extract product name:", nameError);
-        }
-        
-        onResult?.(text, result.ingredients, capturedImage, productName);
-      } else {
+      if (!text.trim()) {
         toast({
-          title: "Текст не найден",
-          description: "Не удалось обнаружить текст на изображении. Попробуйте еще раз.",
+          title: "Введите состав",
+          description: "Пожалуйста, введите список ингредиентов в текстовое поле",
           variant: "destructive",
         });
+        setIsProcessing(false);
+        return;
       }
+
+      console.log("Processing ingredients with text length:", text.length);
+      
+      // Extract ingredients using AI
+      const result = await extractIngredientsMutation.mutateAsync(text);
+      console.log("AI extraction completed");
+      
+      // Try to extract product name from the text
+      let productName = "Косметический продукт";
+      try {
+        const productNameResponse = await fetch('/api/extract-product-name', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+        
+        if (productNameResponse.ok) {
+          const nameData = await productNameResponse.json();
+          if (nameData.productName && nameData.productName.trim()) {
+            productName = nameData.productName;
+          }
+        }
+      } catch (nameError) {
+        console.warn("Failed to extract product name:", nameError);
+      }
+      
+      onResult?.(text, result.ingredients, capturedImage, productName);
     } catch (error) {
       console.error("Failed to process image:", error);
       toast({
@@ -271,6 +271,23 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
                       <p>• Находим список ингредиентов</p>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Manual input overlay - only show when not processing */}
+            {!isProcessing && (
+              <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-80 p-4 space-y-3">
+                <div className="space-y-2">
+                  <label className="text-white text-sm font-medium">
+                    {extractedText ? "Состав распознан автоматически (можно редактировать):" : "Введите состав с упаковки:"}
+                  </label>
+                  <textarea
+                    value={extractedText}
+                    onChange={(e) => setExtractedText(e.target.value)}
+                    placeholder="Перечислите ингредиенты через запятую..."
+                    className="w-full h-24 px-3 py-2 bg-gray-800 text-white rounded border border-gray-600 focus:border-primary focus:outline-none text-sm resize-none"
+                  />
                 </div>
               </div>
             )}

@@ -3,8 +3,22 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+
+// Configure CSP to allow OCR libraries
+app.use((req, res, next) => {
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob:; " +
+    "worker-src 'self' blob:; " +
+    "connect-src 'self' https://api.perplexity.ai https://generativelanguage.googleapis.com; " +
+    "img-src 'self' data: blob:; " +
+    "style-src 'self' 'unsafe-inline';"
+  );
+  next();
+});
 
 app.use((req, res, next) => {
   const start = Date.now();
