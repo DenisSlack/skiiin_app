@@ -183,19 +183,18 @@ export async function findProductIngredients(productName: string): Promise<strin
           },
           {
             role: "user",
-            content: `Find the ingredients list for cosmetic product "${productName}". 
+            content: `Search for the exact ingredients list of cosmetic product "${productName}".
 
-RETURN ONLY: ingredients list in English, separated by commas
+Look for the INCI (International Nomenclature of Cosmetic Ingredients) list on:
+- Official brand websites
+- Beauty retailers (Sephora, Ulta, Douglas, Wildberries, Ozon)
+- Product databases and catalogs
 
-DO NOT ADD:
-- "Based on available sources..."
-- "However..."
-- "According to..."
-- Any explanations or comments
+CRITICAL: Return ONLY the ingredients separated by commas. Do not include any explanations, sources, or additional text.
 
-Example correct answer: "Water, Glycerin, Niacinamide, Cetyl Alcohol, Salicylic Acid"
+Format: "Water, Glycerin, Niacinamide, Salicylic Acid, Cetyl Alcohol"
 
-If ingredients not found, return empty string.`
+If no ingredients found, return: "Ingredients not available"`
           }
         ],
         max_tokens: 300,
@@ -215,9 +214,12 @@ If ingredients not found, return empty string.`
     const data = await response.json();
     let ingredients = data.choices[0]?.message?.content?.trim() || "";
     
+    console.log(`Raw response for ${productName}:`, ingredients);
+    
     // Clean unwanted phrases
     const unwantedPhrases = [
-      "Из доступных источников",
+      "Ingredients not available",
+      "Из доступных источников", 
       "не удалось найти",
       "Однако",
       "По информации",
@@ -227,7 +229,11 @@ If ingredients not found, return empty string.`
       "Based on available information",
       "According to",
       "Please note",
-      "It should be noted"
+      "It should be noted",
+      "I cannot find",
+      "I could not find",
+      "Not available",
+      "Unable to find"
     ];
     
     const sentences = ingredients.split(/[.!?]\s+/);
