@@ -17,7 +17,6 @@ export default function Scanner() {
   const [, setLocation] = useLocation();
   const [showCamera, setShowCamera] = useState(false);
   const [productName, setProductName] = useState("");
-  const [brand, setBrand] = useState("");
   const [ingredients, setIngredients] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const queryClient = useQueryClient();
@@ -37,8 +36,8 @@ export default function Scanner() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to save product. Please try again.",
+        title: "Ошибка",
+        description: "Не удалось сохранить продукт. Попробуйте снова.",
         variant: "destructive",
       });
       setIsAnalyzing(false);
@@ -57,8 +56,8 @@ export default function Scanner() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to analyze product. Please try again.",
+        title: "Ошибка",
+        description: "Не удалось проанализировать продукт. Попробуйте снова.",
         variant: "destructive",
       });
       setIsAnalyzing(false);
@@ -68,8 +67,8 @@ export default function Scanner() {
   const handleAnalyze = async () => {
     if (!productName.trim() || !ingredients.trim()) {
       toast({
-        title: "Missing Information",
-        description: "Please provide product name and ingredients.",
+        title: "Недостающая информация",
+        description: "Укажите название продукта и состав.",
         variant: "destructive",
       });
       return;
@@ -80,7 +79,6 @@ export default function Scanner() {
     // Create product first
     createProductMutation.mutate({
       name: productName,
-      brand: brand || undefined,
       category: "unknown",
       ingredients: ingredients.split(",").map(i => i.trim()),
     });
@@ -110,7 +108,7 @@ export default function Scanner() {
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <h2 className="text-xl font-semibold">Product Scanner</h2>
+          <h2 className="text-xl font-semibold">Сканер продуктов</h2>
         </div>
 
         {/* Scanner Section */}
@@ -130,7 +128,7 @@ export default function Scanner() {
                     <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/60 rounded-full mx-auto flex items-center justify-center">
                       <Camera className="w-8 h-8 text-white" />
                     </div>
-                    <p className="text-gray-600 text-sm">Tap to scan ingredient list</p>
+                    <p className="text-gray-600 text-sm">Нажмите для сканирования состава</p>
                   </div>
                 </div>
                 
