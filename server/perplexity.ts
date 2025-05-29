@@ -76,11 +76,11 @@ export async function findProductIngredients(productName: string): Promise<strin
         messages: [
           {
             role: "system",
-            content: "Выдай результат в виде списка ингредиентов указанных в составе данного продукта. Никаких объяснений, только список через запятую."
+            content: "Выдай результат в виде списка ингредиентов указанных в составе данного продукта. Никаких объяснений, только список через запятую НА АНГЛИЙСКОМ ЯЗЫКЕ."
           },
           {
             role: "user",
-            content: `Найди состав продукта "${productName}". Выдай результат в виде списка ингредиентов указанных в составе данного продукта.`
+            content: `Найди состав продукта "${productName}". Выдай результат в виде списка ингредиентов указанных в составе данного продукта НА АНГЛИЙСКОМ ЯЗЫКЕ, например: Water, Glycerin, Niacinamide.`
           }
         ],
         max_tokens: 500,
@@ -113,11 +113,14 @@ export async function findProductIngredients(productName: string): Promise<strin
       .trim();
     
     // Проверяем что получили валидный список
-    if (ingredients.includes("not available") || 
-        ingredients.includes("не найден") || 
-        ingredients.length < 15 ||
-        ingredients.split(',').length < 3) {
-      console.log(`No valid ingredients found for ${productName}`);
+    const ingredientCount = ingredients.split(',').length;
+    const hasValidIngredients = ingredientCount >= 3 && ingredients.length >= 10;
+    const notErrorResponse = !ingredients.includes("not available") && 
+                             !ingredients.includes("не найден") &&
+                             !ingredients.includes("не найдено");
+    
+    if (!hasValidIngredients || !notErrorResponse) {
+      console.log(`No valid ingredients found for ${productName}. Count: ${ingredientCount}, Length: ${ingredients.length}`);
       return "";
     }
     
