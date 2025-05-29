@@ -393,16 +393,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // OCR and ingredient extraction
   app.post('/api/extract-ingredients', isAuthenticated, async (req: any, res) => {
     try {
+      console.log("Starting ingredient extraction...");
       const { text } = req.body;
       
       if (!text) {
+        console.log("No text provided");
         return res.status(400).json({ message: "Text is required" });
       }
 
+      console.log("Text length:", text.length);
+      console.log("Text preview:", text.substring(0, 200));
+      
+      console.log("Calling extractIngredientsFromText...");
       const ingredients = await extractIngredientsFromText(text);
+      console.log("Extraction completed, ingredients count:", ingredients?.length || 0);
+      
       res.json({ ingredients });
     } catch (error) {
       console.error("Error extracting ingredients:", error);
+      console.error("Error stack:", error.stack);
       res.status(500).json({ message: "Failed to extract ingredients" });
     }
   });
