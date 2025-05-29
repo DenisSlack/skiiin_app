@@ -350,11 +350,16 @@ If no ingredients found, return: "Ingredients not available"`
           let altIngredients = altData.choices[0]?.message?.content?.trim() || "";
           console.log(`Alternative search result for ${productName}:`, altIngredients);
           
-          // Базовая очистка альтернативного результата
+          // Улучшенная проверка альтернативного результата
           if (altIngredients && 
               !altIngredients.toLowerCase().includes("not available") &&
               !altIngredients.toLowerCase().includes("not found") &&
-              altIngredients.length > 10) {
+              !altIngredients.toLowerCase().includes("i would recommend") &&
+              !altIngredients.toLowerCase().includes("i don't have") &&
+              !altIngredients.toLowerCase().includes("official website") &&
+              !altIngredients.toLowerCase().includes("beauty websites") &&
+              altIngredients.length > 10 &&
+              altIngredients.includes(",")) { // Должен содержать запятые как список ингредиентов
             return altIngredients;
           }
         }
