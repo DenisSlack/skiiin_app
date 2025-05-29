@@ -2,8 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { analyzeIngredients, extractIngredientsFromText, generateProductRecommendations } from "./openai";
-import { analyzeIngredientsWithGemini, getProductRecommendationsWithGemini, researchIngredientSafety } from "./gemini";
+import { analyzeIngredientsWithGemini, getProductRecommendationsWithGemini, researchIngredientSafety, findProductIngredients, generatePartnerRecommendations, extractIngredientsFromText } from "./gemini";
 import { insertProductSchema, insertAnalysisSchema, updateSkinProfileSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -138,14 +137,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       } catch (geminiError) {
-        console.error("Gemini analysis failed, falling back to OpenAI:", geminiError);
-        // Fallback to OpenAI if Gemini fails
-        const openAIResult = await analyzeIngredients(ingredientList, skinProfile);
-        analysisResult = {
-          ...openAIResult,
-          researchSummary: "Analysis completed with alternative AI service",
-          alternativeProducts: [],
-        };
+        console.error("Gemini analysis failed:", geminiError);
+        throw new Error("Failed to analyze ingredients with AI service");
+      }
+
+      // Генерируем партнерские рекомендации для монетизации
+      try {
+        const partnerRecommendations = await generatePartnerRecommendations(analysisResult, skinProfile);
+        analysisResult.partnerRecommendations = partnerRecommendations;
+      } catch (partnerError) {
+        console.log("Could not generate partner recommendations:", partnerError);
+        analysisResult.partnerRecommendations = { products: [], reasoning: "" };
       }
 
       // Update product with compatibility score
@@ -229,12 +231,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Try enhanced recommendations with Gemini first
         recommendations = await getProductRecommendationsWithGemini(skinProfile, products);
       } catch (geminiError) {
-        console.error("Gemini recommendations failed, falling back to OpenAI:", geminiError);
-        // Fallback to OpenAI
-        const fallbackRecs = await generateProductRecommendations(skinProfile, products);
+        console.error("Failed to generate recommendations:", geminiError);
         recommendations = {
-          ...fallbackRecs,
-          marketInsights: ["Market insights currently unavailable"]
+          recommendations: [],
+          reasoning: "Рекомендации временно недоступны",
+          marketInsights: []
         };
       }
 

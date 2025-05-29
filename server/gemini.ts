@@ -27,6 +27,10 @@ export interface EnhancedProductAnalysisResult {
   overallAssessment: string;
   researchSummary?: string;
   alternativeProducts?: string[];
+  partnerRecommendations?: {
+    products: any[];
+    reasoning: string;
+  };
 }
 
 export interface SkinProfile {
@@ -179,6 +183,35 @@ export async function findProductIngredients(productName: string): Promise<strin
   } catch (error) {
     console.error("Error finding product ingredients:", error);
     throw new Error("Failed to find product ingredients");
+  }
+}
+
+// Функция для извлечения ингредиентов из текста
+export async function extractIngredientsFromText(text: string): Promise<string[]> {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    const prompt = `Извлеки все косметические ингредиенты из данного текста. Верни только чистый список ингредиентов в формате JSON.
+    
+    Текст: "${text}"
+    
+    Верни в JSON формате:
+    {
+      "ingredients": ["ингредиент1", "ингредиент2", ...]
+    }`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const parsed = JSON.parse(response.text());
+    return parsed.ingredients || [];
+  } catch (error) {
+    console.error("Error extracting ingredients:", error);
+    // Fallback: простое извлечение
+    const cleanText = text.replace(/[^\w\s,.-]/g, '').trim();
+    return cleanText
+      .split(/[,\n]/)
+      .map((ingredient: string) => ingredient.trim())
+      .filter((ingredient: string) => ingredient.length > 2 && ingredient.length < 50);
   }
 }
 
