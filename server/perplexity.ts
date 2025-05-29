@@ -105,39 +105,42 @@ export async function findProductIngredients(productName: string): Promise<strin
     // Извлекаем список ингредиентов из ответа
     let ingredients = rawResponse;
     
-    // Извлекаем только чистый список ингредиентов
-    const ingredientPattern = /([A-Za-z][A-Za-z\s\(\)\/\-]*(?:,\s*[A-Za-z][A-Za-z\s\(\)\/\-]*){4,})/g;
-    const matches = rawResponse.match(ingredientPattern);
+    // Ищем строки с ингредиентами (строки с дефисами или в кавычках)
+    const lines = rawResponse.split('\n');
+    const ingredientLines = [];
     
-    if (matches && matches.length > 0) {
-      // Берем самый длинный найденный список ингредиентов
-      ingredients = matches.reduce((longest, current) => 
-        current.length > longest.length ? current : longest, ""
-      );
-    } else {
-      // Если паттерн не сработал, убираем системные фразы вручную
-      ingredients = rawResponse
-        .replace(/.*(?:состав|ingredients|включает|found in|here is|list)[:\s]*/gi, '')
-        .replace(/^[-•\s]*/gm, '')
-        .replace(/\n/g, ', ')
-        .replace(/for the specific.*$/gi, '')
-        .replace(/you would need.*$/gi, '')
-        .replace(/if you have access.*$/gi, '')
-        .replace(/.*moisturizers[:\s]*/gi, '')
-        .replace(/.*products[:\s]*/gi, '')
-        .replace(/.*there\.$/gi, '')
-        .trim();
+    for (const line of lines) {
+      // Ищем строки, которые начинаются с дефиса и содержат ингредиенты в верхнем регистре
+      if (line.match(/^\s*-\s*[A-Z][A-Z\s\/\(\)]+$/)) {
+        const clean = line.replace(/^\s*-\s*/, '').trim();
+        if (clean.length > 2) {
+          ingredientLines.push(clean);
+        }
+      }
     }
     
-    // Финальная очистка от служебных фраз
+    if (ingredientLines.length >= 5) {
+      // Если нашли достаточно ингредиентов в списке, используем их
+      ingredients = ingredientLines.join(', ');
+    } else {
+      // Иначе ищем непрерывный список через запятые
+      const commaPattern = /([A-Z][A-Z\s\/\(\)]+(?:,\s*[A-Z][A-Z\s\/\(\)]+){4,})/g;
+      const matches = rawResponse.match(commaPattern);
+      
+      if (matches && matches.length > 0) {
+        ingredients = matches.reduce((longest: string, current: string) => 
+          current.length > longest.length ? current : longest, ""
+        );
+      } else {
+        console.log(`No valid ingredient pattern found for ${productName}`);
+        return "";
+      }
+    }
+    
+    // Финальная очистка
     ingredients = ingredients
-      .replace(/^.*?(?=\b[A-Z][A-Z\s]*\b)/, '') // Убираем все до первого ингредиента в верхнем регистре
-      .replace(/\s*,?\s*for.*$/gi, '') // Убираем концовки типа "for that product"
-      .replace(/\s*,?\s*you would.*$/gi, '') // Убираем "you would need..."
-      .replace(/^[^A-Za-z]*/, '') // Убираем символы в начале
-      .replace(/[^A-Za-z\s\(\)\/\-,]*$/, '') // Убираем символы в конце
-      .replace(/^ed as follows:?\s*,?\s*/gi, '') // Убираем "ed as follows:"
-      .replace(/^listed as follows:?\s*,?\s*/gi, '') // Убираем "listed as follows:"
+      .replace(/^[^A-Z]*/, '') // Убираем все до первого ингредиента в верхнем регистре
+      .replace(/[^A-Za-z\s\/\(\),]*$/, '') // Убираем лишние символы в конце
       .trim();
     
     // Проверяем что получили валидный список
