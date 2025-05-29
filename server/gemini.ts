@@ -515,3 +515,63 @@ Respond with JSON:
     throw new Error("Failed to research ingredient safety: " + (error as Error).message);
   }
 }
+
+// Новая функция для персонализированных рекомендаций через Perplexity
+export async function getPersonalizedRecommendation(
+  productName: string,
+  ingredients: string,
+  skinProfile?: SkinProfile
+): Promise<string> {
+  if (!process.env.PERPLEXITY_API_KEY) {
+    throw new Error("PERPLEXITY_API_KEY не настроен");
+  }
+
+  try {
+    const skinContext = skinProfile ? `
+Тип кожи: ${skinProfile.skinType}
+Проблемы кожи: ${skinProfile.skinConcerns.join(', ')}
+Аллергии: ${skinProfile.allergies.join(', ')}
+Предпочтения: ${skinProfile.preferences.join(', ')}
+` : 'Универсальный тип кожи';
+
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: "llama-3.1-sonar-small-128k-online",
+        messages: [
+          {
+            role: "user",
+            content: `На сколько данное средство "${productName}" с составом "${ingredients}" подойдет моему типу кожи с учетом наличия аллергических реакций и состояния кожи? 
+
+Мой профиль кожи:
+${skinContext}
+
+Дай ответ до 300 символов`
+          }
+        ],
+        max_tokens: 200,
+        temperature: 0.2,
+        top_p: 0.8,
+        search_recency_filter: "month",
+        return_images: false,
+        return_related_questions: false,
+        stream: false
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Perplexity API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.choices[0]?.message?.content?.trim() || "";
+
+  } catch (error) {
+    console.error("Error getting personalized recommendation:", error);
+    return "";
+  }
+}

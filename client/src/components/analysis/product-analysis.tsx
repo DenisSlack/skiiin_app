@@ -30,20 +30,21 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
   // Мутация для получения персональной рекомендации
   const getPersonalRecommendation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("/api/analysis/personal-recommendation", {
+      const response = await fetch("/api/analysis/personal-recommendation", {
         method: "POST",
-        body: {
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           productName: product.name,
           ingredients: product.ingredients || "",
           skinProfile: {
-            skinType: user?.skinType || "",
-            skinConcerns: user?.skinConcerns || [],
-            allergies: user?.allergies || [],
-            preferences: user?.preferences || []
+            skinType: (user as any)?.skinType || "",
+            skinConcerns: (user as any)?.skinConcerns || [],
+            allergies: (user as any)?.allergies || [],
+            preferences: (user as any)?.preferences || []
           }
-        }
+        })
       });
-      return response;
+      return response.json();
     },
     onSuccess: (data) => {
       setPersonalRecommendation(data.recommendation);
@@ -53,13 +54,14 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
   // Мутация для получения отзывов пользователей
   const getUserReviews = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("/api/analysis/user-reviews", {
+      const response = await fetch("/api/analysis/user-reviews", {
         method: "POST",
-        body: {
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           productName: product.name
-        }
+        })
       });
-      return response;
+      return response.json();
     },
     onSuccess: (data) => {
       setUserReviews(data.reviews || []);
