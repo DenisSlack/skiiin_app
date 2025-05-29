@@ -564,6 +564,57 @@ Respond with JSON:
   }
 }
 
+// Функция для поиска изображения продукта
+export async function findProductImage(productName: string): Promise<string> {
+  if (!process.env.PERPLEXITY_API_KEY) {
+    throw new Error("PERPLEXITY_API_KEY не настроен");
+  }
+
+  try {
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: "llama-3.1-sonar-small-128k-online",
+        messages: [
+          {
+            role: "user",
+            content: `Найди официальное изображение продукта "${productName}". Верни только прямую ссылку на изображение в формате: https://example.com/image.jpg`
+          }
+        ],
+        max_tokens: 100,
+        temperature: 0.1,
+        top_p: 0.8,
+        search_recency_filter: "month",
+        return_images: true,
+        return_related_questions: false,
+        stream: false
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Perplexity API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const imageUrl = data.choices[0]?.message?.content?.trim() || "";
+    
+    // Проверяем, что это действительно URL изображения
+    if (imageUrl && (imageUrl.includes('http') && (imageUrl.includes('.jpg') || imageUrl.includes('.png') || imageUrl.includes('.jpeg')))) {
+      return imageUrl;
+    }
+    
+    return "";
+
+  } catch (error) {
+    console.error("Error finding product image:", error);
+    return "";
+  }
+}
+
 // Новая функция для персонализированных рекомендаций через Perplexity
 export async function getPersonalizedRecommendation(
   productName: string,

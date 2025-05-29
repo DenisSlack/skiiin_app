@@ -124,8 +124,9 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
     }
   };
 
-  const compatibilityScore = product.compatibilityScore || 0;
-  const compatibilityRating = product.compatibilityRating || "unknown";
+  // Используем скоринговые данные для совместимости, если доступны
+  const compatibilityScore = analysis?.scoring?.overall || product.compatibilityScore || 0;
+  const compatibilityRating = analysis?.scoring?.recommendation || product.compatibilityRating || "unknown";
   const ingredients = product.ingredients || [];
   const insights = analysis?.insights || {};
   const researchSummary = analysis?.result?.researchSummary;

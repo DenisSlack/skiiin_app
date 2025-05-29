@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { analyzeIngredientsWithGemini, getProductRecommendationsWithGemini, researchIngredientSafety, findProductIngredients, generatePartnerRecommendations, extractIngredientsFromText } from "./gemini";
+import { analyzeIngredientsWithGemini, getProductRecommendationsWithGemini, researchIngredientSafety, findProductIngredients, generatePartnerRecommendations, extractIngredientsFromText, findProductImage } from "./gemini";
 import { insertProductSchema, insertAnalysisSchema, updateSkinProfileSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -40,9 +40,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/products', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      
+      // Поиск изображения продукта
+      let imageUrl = "";
+      try {
+        imageUrl = await findProductImage(req.body.name || "");
+      } catch (imageError) {
+        console.log("Could not find product image:", imageError);
+      }
+      
       const productData = insertProductSchema.parse({
         ...req.body,
         userId,
+        imageUrl: imageUrl || null,
       });
 
       const product = await storage.createProduct(productData);
