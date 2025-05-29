@@ -254,7 +254,51 @@ If no ingredients found, return: "Ingredients not available"`
         ingredients.includes("not found") || 
         ingredients.includes("не могу") ||
         ingredients.includes("cannot") ||
+        ingredients.includes("Ingredients not available") ||
         ingredients.length < 10) {
+      
+      console.log(`Primary search failed for ${productName}, trying alternative search...`);
+      
+      // Попробуем альтернативный поиск с упрощенным запросом
+      try {
+        const altResponse = await fetch('https://api.perplexity.ai/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: "llama-3.1-sonar-small-128k-online",
+            messages: [
+              {
+                role: "user",
+                content: `Find cosmetic ingredients for "${productName}". Search beauty websites, brand sites, ingredient databases. Return only ingredient names separated by commas.`
+              }
+            ],
+            max_tokens: 200,
+            temperature: 0.1,
+            search_recency_filter: "month",
+            stream: false
+          })
+        });
+
+        if (altResponse.ok) {
+          const altData = await altResponse.json();
+          let altIngredients = altData.choices[0]?.message?.content?.trim() || "";
+          console.log(`Alternative search result for ${productName}:`, altIngredients);
+          
+          // Базовая очистка альтернативного результата
+          if (altIngredients && 
+              !altIngredients.toLowerCase().includes("not available") &&
+              !altIngredients.toLowerCase().includes("not found") &&
+              altIngredients.length > 10) {
+            return altIngredients;
+          }
+        }
+      } catch (altError) {
+        console.log(`Alternative search also failed for ${productName}:`, altError);
+      }
+      
       return "";
     }
     
