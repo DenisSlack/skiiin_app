@@ -377,7 +377,7 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-600">Expert advice not available for this analysis.</p>
+                  <p className="text-sm text-gray-600">Советы экспертов недоступны для данного анализа.</p>
                 )}
               </TabsContent>
             </Tabs>
@@ -389,16 +389,16 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
       <Card className="border-gray-200">
         <CardContent className="p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h4 className="font-semibold">Personal Recommendations</h4>
+            <h4 className="font-semibold">Персональные рекомендации</h4>
             {getPersonalRecommendation.isPending && (
-              <div className="text-xs text-gray-500">Loading personal advice...</div>
+              <div className="text-xs text-gray-500">Загрузка персональных советов...</div>
             )}
           </div>
           
           {/* Персональная рекомендация */}
           {personalRecommendation && (
             <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border-l-4 border-purple-400">
-              <h5 className="text-sm font-medium text-purple-800 mb-2">For Your Skin Type</h5>
+              <h5 className="text-sm font-medium text-purple-800 mb-2">Для вашего типа кожи</h5>
               <p className="text-sm text-purple-700">{personalRecommendation}</p>
             </div>
           )}
@@ -406,7 +406,7 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
           {/* Общие рекомендации */}
           {insights?.recommendations?.length > 0 && (
             <div className="space-y-2">
-              <h5 className="text-sm font-medium text-gray-700">General Recommendations</h5>
+              <h5 className="text-sm font-medium text-gray-700">Общие рекомендации</h5>
               {insights.recommendations.map((rec: string, index: number) => (
                 <div key={index} className="flex items-start space-x-2">
                   <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0"></div>
@@ -417,7 +417,7 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
           )}
           
           {!personalRecommendation && !insights?.recommendations?.length && (
-            <p className="text-sm text-gray-500">Click "Get Personal Advice" to receive personalized recommendations based on your skin profile.</p>
+            <p className="text-sm text-gray-500">Нажмите "Получить персональный совет", чтобы получить персональные рекомендации на основе вашего профиля кожи.</p>
           )}
         </CardContent>
       </Card>
@@ -435,13 +435,13 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
           className="flex-1 app-gradient text-white font-medium"
           onClick={() => {
             toast({
-              title: "Saved",
-              description: "Product saved to your library",
+              title: "Сохранено",
+              description: "Продукт сохранен в вашу библиотеку",
             });
           }}
         >
           <Save className="w-4 h-4 mr-2" />
-          Save to Library
+          Сохранить в библиотеку
         </Button>
       </div>
     </div>
