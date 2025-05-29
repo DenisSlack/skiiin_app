@@ -1,0 +1,214 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Save, Share2, CheckCircle, Info, Star, AlertTriangle } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+
+interface ProductAnalysisProps {
+  product: any;
+  analysis?: any;
+}
+
+export default function ProductAnalysis({ product, analysis }: ProductAnalysisProps) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const getCompatibilityColor = (rating: string) => {
+    switch (rating) {
+      case "excellent": return "text-green-600 bg-green-50";
+      case "good": return "text-blue-600 bg-blue-50";
+      case "caution": return "text-yellow-600 bg-yellow-50";
+      case "avoid": return "text-red-600 bg-red-50";
+      default: return "text-gray-600 bg-gray-50";
+    }
+  };
+
+  const getCompatibilityIcon = (rating: string) => {
+    switch (rating) {
+      case "excellent": return <CheckCircle className="w-4 h-4" />;
+      case "good": return <Star className="w-4 h-4" />;
+      case "caution": return <Info className="w-4 h-4" />;
+      case "avoid": return <AlertTriangle className="w-4 h-4" />;
+      default: return null;
+    }
+  };
+
+  const getIngredientSafetyColor = (rating: string) => {
+    switch (rating) {
+      case "safe": return "bg-green-500";
+      case "caution": return "bg-yellow-500";
+      case "avoid": return "bg-red-500";
+      default: return "bg-gray-400";
+    }
+  };
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: `${product.name} Analysis`,
+        text: `Check out my Skiiin IQ analysis for ${product.name}`,
+        url: window.location.href,
+      });
+    } else {
+      // Fallback to copying URL
+      navigator.clipboard.writeText(window.location.href);
+      toast({
+        title: "Link Copied",
+        description: "Analysis link copied to clipboard",
+      });
+    }
+  };
+
+  const compatibilityScore = product.compatibilityScore || 0;
+  const compatibilityRating = product.compatibilityRating || "unknown";
+  const ingredients = product.ingredients || [];
+  const insights = analysis?.insights || {};
+
+  return (
+    <div className="space-y-6">
+      {/* Product Info */}
+      <Card className="border-gray-200">
+        <CardContent className="p-4 space-y-4">
+          <div className="flex items-start space-x-4">
+            <div className="w-20 h-20 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden">
+              {product.imageUrl ? (
+                <img 
+                  src={product.imageUrl} 
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="text-gray-400 text-center text-xs">No Image</div>
+              )}
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold">{product.name}</h3>
+              {product.brand && (
+                <p className="text-gray-600 text-sm">{product.brand}</p>
+              )}
+              <div className="mt-2 flex items-center space-x-2">
+                <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-sm font-medium ${getCompatibilityColor(compatibilityRating)}`}>
+                  {getCompatibilityIcon(compatibilityRating)}
+                  <span>{compatibilityScore}% Compatible</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Compatibility Score */}
+          <div className={`p-4 rounded-xl ${getCompatibilityColor(compatibilityRating)}`}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Compatibility Score</span>
+              <span className="text-lg font-bold capitalize">{compatibilityRating} Match</span>
+            </div>
+            <Progress value={compatibilityScore} className="h-2" />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Key Insights */}
+      {insights && (insights.positive?.length > 0 || insights.concerns?.length > 0) && (
+        <Card className="border-gray-200">
+          <CardContent className="p-4 space-y-4">
+            <h4 className="font-semibold">Key Insights</h4>
+            
+            <div className="space-y-3">
+              {insights.positive?.map((insight: string, index: number) => (
+                <div key={index} className="flex items-start space-x-3 p-3 bg-green-50 rounded-lg">
+                  <CheckCircle className="text-green-500 mt-0.5 flex-shrink-0" size={16} />
+                  <p className="text-sm text-green-800">{insight}</p>
+                </div>
+              ))}
+              
+              {insights.concerns?.map((concern: string, index: number) => (
+                <div key={index} className="flex items-start space-x-3 p-3 bg-yellow-50 rounded-lg">
+                  <AlertTriangle className="text-yellow-500 mt-0.5 flex-shrink-0" size={16} />
+                  <p className="text-sm text-yellow-800">{concern}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Ingredient Breakdown */}
+      {ingredients.length > 0 && (
+        <Card className="border-gray-200">
+          <CardContent className="p-4 space-y-4">
+            <h4 className="font-semibold">Ingredient Analysis</h4>
+            
+            <div className="space-y-3">
+              {ingredients.slice(0, 10).map((ingredient: any, index: number) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">
+                      {typeof ingredient === 'string' ? ingredient : ingredient.name}
+                    </p>
+                    {ingredient.purpose && (
+                      <p className="text-xs text-gray-600">{ingredient.purpose}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-2 h-2 rounded-full ${getIngredientSafetyColor(ingredient.safetyRating || 'safe')}`}></div>
+                    <span className="text-xs font-medium text-gray-600 capitalize">
+                      {ingredient.safetyRating || 'Safe'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              
+              {ingredients.length > 10 && (
+                <p className="text-xs text-gray-500 text-center">
+                  And {ingredients.length - 10} more ingredients...
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recommendations */}
+      {insights?.recommendations?.length > 0 && (
+        <Card className="border-gray-200">
+          <CardContent className="p-4 space-y-4">
+            <h4 className="font-semibold">Recommendations</h4>
+            <div className="space-y-2">
+              {insights.recommendations.map((rec: string, index: number) => (
+                <div key={index} className="flex items-start space-x-2">
+                  <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0"></div>
+                  <p className="text-sm text-gray-700">{rec}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Action Buttons */}
+      <div className="flex space-x-3">
+        <Button
+          variant="outline"
+          className="px-6"
+          onClick={handleShare}
+        >
+          <Share2 className="w-4 h-4" />
+        </Button>
+        <Button
+          className="flex-1 app-gradient text-white font-medium"
+          onClick={() => {
+            toast({
+              title: "Saved",
+              description: "Product saved to your library",
+            });
+          }}
+        >
+          <Save className="w-4 h-4 mr-2" />
+          Save to Library
+        </Button>
+      </div>
+    </div>
+  );
+}
