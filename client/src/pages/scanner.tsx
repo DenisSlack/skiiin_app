@@ -198,6 +198,37 @@ export default function Scanner() {
             </div>
             
             <div className="p-6 space-y-6">
+              {/* Product Image Preview */}
+              {productImage && (
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <Label className="text-sm font-medium text-gray-700">
+                      Фото продукта
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                    <img 
+                      src={productImage} 
+                      alt="Product"
+                      className="w-16 h-16 object-cover rounded-lg border border-green-300"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-green-800">Изображение сохранено</p>
+                      <p className="text-xs text-green-600">Фото продукта будет добавлено к записи</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setProductImage(null)}
+                      className="text-green-600 hover:text-green-800 hover:bg-green-100"
+                    >
+                      Удалить
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {/* Product Name Field */}
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">

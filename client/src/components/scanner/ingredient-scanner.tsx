@@ -65,7 +65,7 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
       if (text.trim()) {
         // Extract ingredients using AI
         const result = await extractIngredientsMutation.mutateAsync(text);
-        onResult?.(text, result.ingredients);
+        onResult?.(text, result.ingredients, capturedImage || undefined);
       } else {
         toast({
           title: "Текст не найден",
@@ -127,9 +127,9 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
         
         if (ingredientResponse.ok) {
           const ingredientData = await ingredientResponse.json();
-          onResult?.(data.ingredients, ingredientData.ingredients);
+          onResult?.(data.ingredients, ingredientData.ingredients, undefined);
         } else {
-          onResult?.(data.ingredients);
+          onResult?.(data.ingredients, undefined, undefined);
         }
       } else {
         const message = data.message || "Не удалось найти состав этого продукта. Попробуйте сканирование.";
