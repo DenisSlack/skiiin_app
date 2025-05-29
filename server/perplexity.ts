@@ -76,11 +76,11 @@ export async function findProductIngredients(productName: string): Promise<strin
         messages: [
           {
             role: "system",
-            content: "Ты эксперт по косметике. Найди ПОЛНЫЙ состав продукта (INCI list) на официальных сайтах брендов, косметических магазинах и базах данных. Верни ВСЕ ингредиенты на английском языке через запятую."
+            content: "Выдай результат в виде списка ингредиентов указанных в составе данного продукта. Никаких объяснений, только список через запятую."
           },
           {
             role: "user",
-            content: `Найди полный состав продукта "${productName}". Поищи на официальном сайте бренда, Sephora, Ulta, отзывах, косметических базах данных. Верни ВСЕ ингредиенты в порядке убывания концентрации. Нужен полный список из 10-25 компонентов, не краткое описание. Если полный состав не найден, напиши: "Ingredients not available"`
+            content: `Найди состав продукта "${productName}". Выдай результат в виде списка ингредиентов указанных в составе данного продукта.`
           }
         ],
         max_tokens: 500,
@@ -102,41 +102,21 @@ export async function findProductIngredients(productName: string): Promise<strin
     
     console.log(`Raw response for ${productName}:`, rawResponse);
     
-    // Извлекаем фактический список ингредиентов из ответа
-    let ingredients = "";
+    // Извлекаем список ингредиентов из ответа
+    let ingredients = rawResponse;
     
-    // Ищем списки ингредиентов в различных форматах
-    const patterns = [
-      // Список с тире
-      /[-•]\s*([A-Za-z][A-Za-z\s\(\),]+(?:\n[-•]\s*[A-Za-z][A-Za-z\s\(\),]+)*)/g,
-      // Список через запятые в скобках или после двоеточия
-      /(?:состав[:\s]*|ingredients[:\s]*|включает[:\s]*)((?:[A-Za-z][A-Za-z\s\(\)]*,\s*)*[A-Za-z][A-Za-z\s\(\)]*)/gi,
-      // Прямой список через запятые
-      /([A-Za-z][A-Za-z\s\(\)]*(?:,\s*[A-Za-z][A-Za-z\s\(\)]*){4,})/g
-    ];
+    // Убираем лишние фразы если они есть
+    ingredients = ingredients
+      .replace(/.*(?:состав|ingredients|включает)[:\s]*/gi, '')
+      .replace(/^[-•\s]*/gm, '')
+      .replace(/\n/g, ', ')
+      .trim();
     
-    for (const pattern of patterns) {
-      const matches = rawResponse.match(pattern);
-      if (matches) {
-        for (const match of matches) {
-          // Очищаем от префиксов и форматирования
-          let cleaned = match
-            .replace(/[-•]\s*/g, ', ')
-            .replace(/(?:состав[:\s]*|ingredients[:\s]*|включает[:\s]*)/gi, '')
-            .trim();
-          
-          // Проверяем что это список ингредиентов
-          if (cleaned.split(',').length >= 4 && 
-              /water|aqua|glycerin|alcohol|acid|oil/i.test(cleaned)) {
-            ingredients = cleaned;
-            break;
-          }
-        }
-        if (ingredients) break;
-      }
-    }
-    
-    if (!ingredients || ingredients.length < 20) {
+    // Проверяем что получили валидный список
+    if (ingredients.includes("not available") || 
+        ingredients.includes("не найден") || 
+        ingredients.length < 15 ||
+        ingredients.split(',').length < 3) {
       console.log(`No valid ingredients found for ${productName}`);
       return "";
     }
