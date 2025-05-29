@@ -131,8 +131,13 @@ export async function findProductIngredients(productName: string): Promise<strin
     
     // Финальная очистка от служебных фраз
     ingredients = ingredients
-      .replace(/^[^A-Za-z]*/, '') // Убираем все до первого ингредиента
-      .replace(/[^A-Za-z\s\(\)\/\-,]*$/, '') // Убираем все после последнего ингредиента
+      .replace(/^.*?(?=\b[A-Z][A-Z\s]*\b)/, '') // Убираем все до первого ингредиента в верхнем регистре
+      .replace(/\s*,?\s*for.*$/gi, '') // Убираем концовки типа "for that product"
+      .replace(/\s*,?\s*you would.*$/gi, '') // Убираем "you would need..."
+      .replace(/^[^A-Za-z]*/, '') // Убираем символы в начале
+      .replace(/[^A-Za-z\s\(\)\/\-,]*$/, '') // Убираем символы в конце
+      .replace(/^ed as follows:?\s*,?\s*/gi, '') // Убираем "ed as follows:"
+      .replace(/^listed as follows:?\s*,?\s*/gi, '') // Убираем "listed as follows:"
       .trim();
     
     // Проверяем что получили валидный список
