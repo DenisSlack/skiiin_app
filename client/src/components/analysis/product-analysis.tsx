@@ -159,7 +159,7 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
               <div className="mt-2 flex items-center space-x-2">
                 <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-sm font-medium ${getCompatibilityColor(compatibilityRating)}`}>
                   {getCompatibilityIcon(compatibilityRating)}
-                  <span>{compatibilityScore}% Compatible</span>
+                  <span>{compatibilityScore}% Совместимость</span>
                 </div>
               </div>
             </div>
@@ -168,8 +168,8 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
           {/* Compatibility Score */}
           <div className={`p-4 rounded-xl ${getCompatibilityColor(compatibilityRating)}`}>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Compatibility Score</span>
-              <span className="text-lg font-bold capitalize">{compatibilityRating} Match</span>
+              <span className="text-sm font-medium">Оценка совместимости</span>
+              <span className="text-lg font-bold capitalize">{compatibilityRating === 'excellent' ? 'Отлично' : compatibilityRating === 'good' ? 'Хорошо' : compatibilityRating === 'caution' ? 'Осторожно' : compatibilityRating === 'avoid' ? 'Избегать' : 'Неизвестно'}</span>
             </div>
             <Progress value={compatibilityScore} className="h-2" />
           </div>
@@ -185,7 +185,7 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
       {insights && (insights.positive?.length > 0 || insights.concerns?.length > 0) && (
         <Card className="border-gray-200">
           <CardContent className="p-4 space-y-4">
-            <h4 className="font-semibold">Key Insights</h4>
+            <h4 className="font-semibold">Ключевые выводы</h4>
             
             <div className="space-y-3">
               {insights.positive?.map((insight: string, index: number) => (
@@ -212,16 +212,16 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
           <CardContent className="p-4">
             <Tabs defaultValue="ingredients" className="space-y-4">
               <TabsList className="grid grid-cols-4 w-full">
-                <TabsTrigger value="ingredients" className="text-xs">Ingredients</TabsTrigger>
-                <TabsTrigger value="research" className="text-xs">Research</TabsTrigger>
-                <TabsTrigger value="trends" className="text-xs">Trends</TabsTrigger>
-                <TabsTrigger value="expert" className="text-xs">Expert</TabsTrigger>
+                <TabsTrigger value="ingredients" className="text-xs">Состав</TabsTrigger>
+                <TabsTrigger value="research" className="text-xs">Исследования</TabsTrigger>
+                <TabsTrigger value="trends" className="text-xs">Тренды</TabsTrigger>
+                <TabsTrigger value="expert" className="text-xs">Эксперты</TabsTrigger>
               </TabsList>
 
               <TabsContent value="ingredients" className="space-y-3">
                 <div className="flex items-center space-x-2 mb-4">
                   <Microscope className="w-4 h-4 text-primary" />
-                  <h4 className="font-semibold">Ingredient Analysis</h4>
+                  <h4 className="font-semibold">Анализ состава</h4>
                 </div>
                 
                 {/* Список ингредиентов для отображения */}
@@ -234,7 +234,7 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
                       <div className="flex items-center space-x-2">
                         <div className={`w-2 h-2 rounded-full ${getIngredientSafetyColor(ingredient.safetyRating || 'safe')}`}></div>
                         <span className="text-xs font-medium text-gray-600 capitalize">
-                          {ingredient.safetyRating || 'Safe'}
+                          {ingredient.safetyRating === 'safe' ? 'Безопасно' : ingredient.safetyRating === 'caution' ? 'Осторожно' : ingredient.safetyRating === 'avoid' ? 'Избегать' : 'Безопасно'}
                         </span>
                       </div>
                     </div>
@@ -245,13 +245,13 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
                     
                     {ingredient.scientificResearch && (
                       <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
-                        <strong>Research:</strong> {ingredient.scientificResearch.slice(0, 120)}...
+                        <strong>Исследования:</strong> {ingredient.scientificResearch.slice(0, 120)}...
                       </div>
                     )}
                     
                     {ingredient.expertOpinion && (
                       <div className="text-xs text-purple-600 bg-purple-50 p-2 rounded">
-                        <strong>Expert Opinion:</strong> {ingredient.expertOpinion.slice(0, 120)}...
+                        <strong>Мнение эксперта:</strong> {ingredient.expertOpinion.slice(0, 120)}...
                       </div>
                     )}
                   </div>
@@ -269,12 +269,12 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
                       {showAllIngredients ? (
                         <>
                           <ChevronUp className="w-3 h-3 mr-1" />
-                          Hide ingredients
+                          Скрыть ингредиенты
                         </>
                       ) : (
                         <>
                           <ChevronDown className="w-3 h-3 mr-1" />
-                          And {ingredients.length - 10} more ingredients...
+                          И ещё {ingredients.length - 10} ингредиентов...
                         </>
                       )}
                     </Button>
