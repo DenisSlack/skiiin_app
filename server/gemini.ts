@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { scoreProduct, scoreIngredient, ProductScore } from "./scoring";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
@@ -31,6 +32,7 @@ export interface EnhancedProductAnalysisResult {
     products: any[];
     reasoning: string;
   };
+  scoring?: ProductScore;
 }
 
 export interface SkinProfile {
@@ -175,22 +177,44 @@ ${skinProfileText}
         analysisResult = JSON.parse(jsonText);
       } catch (secondError) {
         console.error("JSON parsing failed completely:", secondError);
-        // Возвращаем базовый результат
+        // Возвращаем базовый результат с скорингом
+        const fallbackScore = scoreProduct(
+          ingredients,
+          productName,
+          skinProfile
+        );
+        
         return {
-          compatibilityScore: 70,
-          compatibilityRating: "good" as const,
+          compatibilityScore: fallbackScore.overall,
+          compatibilityRating: fallbackScore.recommendation,
           ingredients: [],
           insights: {
             positive: ["Продукт проанализирован"],
             concerns: ["Требуется дополнительный анализ"],
             recommendations: ["Рекомендуется консультация со специалистом"]
           },
-          overallAssessment: "Анализ выполнен с ограничениями из-за сложности состава"
+          overallAssessment: "Анализ выполнен с ограничениями из-за сложности состава",
+          scoring: fallbackScore
         };
       }
     }
     
-    return analysisResult as EnhancedProductAnalysisResult;
+    // Добавляем скоринговую модель
+    const productScore = scoreProduct(
+      ingredients,
+      productName,
+      skinProfile
+    );
+
+    // Обогащаем результат скоринговой моделью
+    const enhancedResult = {
+      ...analysisResult,
+      scoring: productScore,
+      compatibilityScore: productScore.overall,
+      compatibilityRating: productScore.recommendation
+    } as EnhancedProductAnalysisResult;
+
+    return enhancedResult;
   } catch (error) {
     console.error("Error analyzing ingredients with Gemini:", error);
     throw new Error("Failed to analyze ingredients: " + (error as Error).message);
