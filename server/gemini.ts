@@ -591,8 +591,20 @@ export async function findProductImage(productName: string): Promise<string> {
         model: "llama-3.1-sonar-small-128k-online",
         messages: [
           {
-            role: "user",
-            content: `Найди официальное изображение продукта "${productName}". Верни только прямую ссылку на изображение в формате: https://example.com/image.jpg`
+            role: "system",
+            content: "Ты эксперт по поиску изображений косметических продуктов. Находи только официальные изображения продуктов высокого качества."
+          },
+          {
+            role: "user", 
+            content: `Найди официальное изображение косметического продукта "${productName}" на официальных сайтах брендов, интернет-магазинах или каталогах красоты. 
+
+Требования:
+- Только прямые ссылки на изображения (.jpg, .jpeg, .png, .webp)
+- Высокое качество изображения
+- Официальные источники (сайты брендов, магазины красоты)
+- Изображение упаковки продукта
+
+Верни ТОЛЬКО ссылку на изображение, без дополнительного текста.`
           }
         ],
         max_tokens: 100,
@@ -610,10 +622,16 @@ export async function findProductImage(productName: string): Promise<string> {
     }
 
     const data = await response.json();
-    const imageUrl = data.choices[0]?.message?.content?.trim() || "";
+    let imageUrl = data.choices[0]?.message?.content?.trim() || "";
+    
+    // Извлекаем URL из ответа, если он содержит дополнительный текст
+    const urlMatch = imageUrl.match(/(https?:\/\/[^\s]+\.(?:jpg|jpeg|png|webp))/i);
+    if (urlMatch) {
+      imageUrl = urlMatch[1];
+    }
     
     // Проверяем, что это действительно URL изображения
-    if (imageUrl && (imageUrl.includes('http') && (imageUrl.includes('.jpg') || imageUrl.includes('.png') || imageUrl.includes('.jpeg')))) {
+    if (imageUrl && imageUrl.startsWith('http') && /\.(jpg|jpeg|png|webp)(\?|$)/i.test(imageUrl)) {
       return imageUrl;
     }
     
