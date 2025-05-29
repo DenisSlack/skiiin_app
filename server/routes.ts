@@ -202,6 +202,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Alternative endpoint path for product ingredient search
+  app.post('/api/products/find-ingredients', isAuthenticated, async (req: any, res) => {
+    try {
+      const { productName } = req.body;
+      
+      if (!productName) {
+        return res.status(400).json({ message: "Product name is required" });
+      }
+
+      const ingredients = await findProductIngredients(productName);
+      res.json({ ingredients });
+    } catch (error) {
+      console.error("Error finding ingredients:", error);
+      res.status(500).json({ message: "Failed to find ingredients" });
+    }
+  });
+
   // OCR and ingredient extraction
   app.post('/api/extract-ingredients', isAuthenticated, async (req: any, res) => {
     try {

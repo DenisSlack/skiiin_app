@@ -65,10 +65,10 @@ export default function Scanner() {
   });
 
   const handleAnalyze = async () => {
-    if (!productName.trim() || !ingredients.trim()) {
+    if (!productName.trim()) {
       toast({
         title: "Недостающая информация",
-        description: "Укажите название продукта и состав.",
+        description: "Укажите название продукта.",
         variant: "destructive",
       });
       return;
@@ -76,12 +76,48 @@ export default function Scanner() {
 
     setIsAnalyzing(true);
 
-    // Create product first
-    createProductMutation.mutate({
-      name: productName,
-      category: "unknown",
-      ingredients: ingredients.split(",").map(i => i.trim()),
-    });
+    try {
+      let finalIngredients = ingredients;
+      
+      // If no ingredients provided, try to find them automatically
+      if (!ingredients.trim()) {
+        const response = await apiRequest("POST", "/api/products/find-ingredients", {
+          productName: productName.trim()
+        });
+        const data = await response.json();
+        
+        if (data.ingredients) {
+          finalIngredients = data.ingredients;
+          setIngredients(data.ingredients);
+          toast({
+            title: "Состав найден автоматически",
+            description: "Анализируем найденный состав продукта.",
+          });
+        } else {
+          toast({
+            title: "Состав не найден",
+            description: "Введите состав продукта вручную для анализа.",
+            variant: "destructive",
+          });
+          setIsAnalyzing(false);
+          return;
+        }
+      }
+
+      // Create product with ingredients
+      createProductMutation.mutate({
+        name: productName,
+        category: "unknown",
+        ingredients: finalIngredients.split(",").map(i => i.trim()),
+      });
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось найти состав продукта. Попробуйте ввести его вручную.",
+        variant: "destructive",
+      });
+      setIsAnalyzing(false);
+    }
   };
 
   const handleScanResult = (scannedText: string, extractedIngredients?: string[]) => {
@@ -137,66 +173,82 @@ export default function Scanner() {
                   onClick={() => setShowCamera(true)}
                 >
                   <Camera className="w-4 h-4 mr-2" />
-                  Start Camera
+                  Запустить камеру
                 </Button>
               </>
             )}
           </CardContent>
         </Card>
 
-        {/* Manual Input Form */}
-        <Card className="border-gray-200">
-          <CardContent className="p-6 space-y-4">
-            <h3 className="text-lg font-semibold">Product Information</h3>
+        {/* Modern Product Information Form */}
+        <Card className="border-gray-200 shadow-sm">
+          <CardContent className="p-0">
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-6 border-b border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900">Информация о продукте</h3>
+              <p className="text-sm text-gray-600 mt-1">Введите данные о продукте для анализа</p>
+            </div>
             
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="productName">Product Name *</Label>
+            <div className="p-6 space-y-6">
+              {/* Product Name Field */}
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-primary rounded-full"></div>
+                  <Label htmlFor="productName" className="text-sm font-medium text-gray-700">
+                    Название продукта *
+                  </Label>
+                </div>
                 <Input
                   id="productName"
-                  placeholder="e.g., CeraVe Daily Moisturizer"
+                  placeholder="Например: La Roche-Posay Effaclar Duo"
                   value={productName}
                   onChange={(e) => setProductName(e.target.value)}
+                  className="border-gray-300 focus:border-primary focus:ring-primary/20"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="brand">Brand</Label>
-                <Input
-                  id="brand"
-                  placeholder="e.g., CeraVe"
-                  value={brand}
-                  onChange={(e) => setBrand(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="ingredients">Ingredients *</Label>
+              {/* Ingredients Field */}
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-primary rounded-full"></div>
+                  <Label htmlFor="ingredients" className="text-sm font-medium text-gray-700">
+                    Состав продукта *
+                  </Label>
+                </div>
                 <Textarea
                   id="ingredients"
-                  placeholder="Enter or paste ingredient list here..."
+                  placeholder="Вставьте или введите список ингредиентов или просто название продукта для автоматического поиска состава..."
                   value={ingredients}
                   onChange={(e) => setIngredients(e.target.value)}
                   rows={6}
-                  className="resize-none"
+                  className="resize-none border-gray-300 focus:border-primary focus:ring-primary/20"
                 />
+                <p className="text-xs text-gray-500">
+                  Можете ввести просто название продукта - мы найдем состав автоматически
+                </p>
               </div>
-            </div>
 
-            <Button 
-              className="w-full app-gradient text-white font-medium"
-              onClick={handleAnalyze}
-              disabled={isAnalyzing || !productName.trim() || !ingredients.trim()}
-            >
-              {isAnalyzing ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Analyzing...
-                </>
-              ) : (
-                "Analyze Product"
-              )}
-            </Button>
+              {/* Analyze Button */}
+              <Button 
+                className="w-full app-gradient text-white font-medium h-12 text-base"
+                onClick={handleAnalyze}
+                disabled={isAnalyzing || !productName.trim()}
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Анализируем...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    Начать анализ
+                  </>
+                )}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </main>
