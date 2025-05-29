@@ -1,4 +1,7 @@
 import { scoreProduct, scoreIngredient, ProductScore } from "./scoring";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export interface EnhancedIngredientAnalysis {
   name: string;
@@ -37,6 +40,66 @@ export interface SkinProfile {
   skinConcerns: string[];
   allergies: string[];
   preferences: string[];
+}
+
+// Fallback функция для поиска ингредиентов через Gemini
+async function findIngredientsWithGemini(productName: string): Promise<string> {
+  try {
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY не настроен");
+    }
+
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash-8b",
+      generationConfig: {
+        temperature: 0.1,
+        topP: 0.8,
+        maxOutputTokens: 400,
+      }
+    });
+
+    const prompt = `Find the exact ingredients list for cosmetic product "${productName}".
+
+Search for INCI (International Nomenclature of Cosmetic Ingredients) on official sources:
+- Brand official websites
+- Beauty retailers (Sephora, Ulta, Douglas, etc.)
+- Cosmetic databases
+
+Return ONLY the ingredients list in English, separated by commas.
+
+Example format: "Water, Glycerin, Niacinamide, Salicylic Acid, Cetyl Alcohol"
+
+If ingredients not found, return "Not found"`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    let ingredients = response.text().trim();
+    
+    // Clean the response
+    ingredients = ingredients
+      .replace(/```.*$/gm, '')
+      .replace(/\*\*/g, '')
+      .replace(/^\*\s*/gm, '')
+      .trim();
+    
+    // Extract ingredients from the response
+    if (ingredients.includes(':')) {
+      const parts = ingredients.split(':');
+      ingredients = parts[parts.length - 1].trim();
+    }
+    
+    // Check if we got valid ingredients
+    if (ingredients.toLowerCase().includes('not found') || 
+        ingredients.toLowerCase().includes('не найден') || 
+        ingredients.length < 10) {
+      return "";
+    }
+    
+    return ingredients;
+  } catch (error) {
+    console.error("Error finding ingredients with Gemini:", error);
+    return "";
+  }
 }
 
 export async function analyzeIngredientsWithPerplexity(
@@ -297,6 +360,18 @@ If no ingredients found, return: "Ingredients not available"`
         }
       } catch (altError) {
         console.log(`Alternative search also failed for ${productName}:`, altError);
+      }
+      
+      // Последняя попытка: используем Gemini для поиска состава
+      console.log(`Trying Gemini as fallback for ${productName}...`);
+      try {
+        const geminiIngredients = await findIngredientsWithGemini(productName);
+        if (geminiIngredients && geminiIngredients.length > 10) {
+          console.log(`Gemini found ingredients for ${productName}:`, geminiIngredients);
+          return geminiIngredients;
+        }
+      } catch (geminiError) {
+        console.log(`Gemini search also failed for ${productName}:`, geminiError);
       }
       
       return "";
