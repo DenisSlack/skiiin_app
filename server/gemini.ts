@@ -177,35 +177,72 @@ Respond with JSON:
   }
 }
 
-// Новая функция для поиска состава по названию продукта
+// Функция для поиска ингредиентов продукта по названию через Perplexity AI
 export async function findProductIngredients(productName: string): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    if (!process.env.PERPLEXITY_API_KEY) {
+      throw new Error("PERPLEXITY_API_KEY не настроен");
+    }
 
-    const prompt = `Найди точный состав косметического продукта "${productName}". 
-    
-    Верни только список ингредиентов в том формате, как они указаны на упаковке (INCI names). 
-    Если не можешь найти точный состав, укажи это честно.
-    
-    Формат ответа: только список ингредиентов через запятую, без дополнительных пояснений.`;
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: "llama-3.1-sonar-small-128k-online",
+        messages: [
+          {
+            role: "system",
+            content: "Ты эксперт по косметике. Найди точный список ингредиентов для запрашиваемого продукта из официальных источников или сайтов производителей."
+          },
+          {
+            role: "user",
+            content: `Найди точный полный список ингредиентов (INCI names) для косметического продукта "${productName}". Ищи информацию на официальных сайтах брендов или в базах данных косметики. Верни только список ингредиентов через запятую, без дополнительных объяснений.`
+          }
+        ],
+        max_tokens: 500,
+        temperature: 0.1,
+        top_p: 0.9,
+        search_recency_filter: "month",
+        return_images: false,
+        return_related_questions: false,
+        stream: false
+      })
+    });
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text() || "Состав не найден";
+    if (!response.ok) {
+      throw new Error(`Perplexity API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const ingredients = data.choices[0]?.message?.content?.trim() || "";
+    
+    // Проверяем, что получили реальный список ингредиентов
+    if (ingredients.includes("не найден") || 
+        ingredients.includes("not found") || 
+        ingredients.includes("не могу") ||
+        ingredients.includes("cannot") ||
+        ingredients.length < 10) {
+      return "";
+    }
+    
+    return ingredients;
   } catch (error) {
-    console.error("Error finding product ingredients:", error);
-    throw new Error("Failed to find product ingredients");
+    console.error("Error finding product ingredients via Perplexity:", error);
+    return "";
   }
 }
 
 // Функция для извлечения ингредиентов из текста
-export async function extractIngredientsFromText(text: string): Promise<string[]> {
+export async function extractIngredientsFromText(inputText: string): Promise<string[]> {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `Извлеки все косметические ингредиенты из данного текста. Верни только чистый список ингредиентов в формате JSON.
     
-    Текст: "${text}"
+    Текст: "${inputText}"
     
     Верни в JSON формате:
     {
@@ -214,10 +251,10 @@ export async function extractIngredientsFromText(text: string): Promise<string[]
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    let text = response.text();
+    let responseText = response.text();
     
     // Очищаем от markdown и комментариев
-    text = text
+    responseText = responseText
       .replace(/```json\s*/g, '')
       .replace(/```\s*/g, '')
       .replace(/\/\/.*$/gm, '')
@@ -225,7 +262,7 @@ export async function extractIngredientsFromText(text: string): Promise<string[]
       .trim();
     
     // Ищем JSON объект
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       let jsonText = jsonMatch[0];
       jsonText = jsonText.replace(/\/\/.*$/gm, '').replace(/,(\s*[}\]])/g, '$1');
@@ -236,8 +273,8 @@ export async function extractIngredientsFromText(text: string): Promise<string[]
     return [];
   } catch (error) {
     console.error("Error extracting ingredients:", error);
-    // Fallback: простое извлечение
-    const cleanText = text.replace(/[^\w\s,.-]/g, '').trim();
+    // Fallback: простое извлечение из исходного текста
+    const cleanText = inputText.replace(/[^\w\s,.-]/g, '').trim();
     return cleanText
       .split(/[,\n]/)
       .map((ingredient: string) => ingredient.trim())
