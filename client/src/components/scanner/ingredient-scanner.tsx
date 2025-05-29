@@ -259,38 +259,20 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
               alt="Captured" 
               className="max-w-full max-h-full object-contain"
             />
-            {isProcessing && (
-              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                <div className="text-center text-white space-y-4 p-6">
-                  <div className="w-12 h-12 animate-spin mx-auto border-3 border-white border-t-transparent rounded-full" />
-                  <div className="space-y-2">
-                    <p className="text-lg font-medium">Анализируем изображение...</p>
-                    <div className="text-sm space-y-1">
-                      <p>• Извлекаем текст с фотографии</p>
-                      <p>• Определяем название продукта</p>
-                      <p>• Находим список ингредиентов</p>
-                    </div>
-                  </div>
-                </div>
+            {/* Manual input overlay */}
+            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-80 p-4 space-y-3">
+              <div className="space-y-2">
+                <label className="text-white text-sm font-medium">
+                  {extractedText ? "Состав распознан автоматически (можно редактировать):" : "Введите состав с упаковки:"}
+                </label>
+                <textarea
+                  value={extractedText}
+                  onChange={(e) => setExtractedText(e.target.value)}
+                  placeholder="Перечислите ингредиенты через запятую..."
+                  className="w-full h-24 px-3 py-2 bg-gray-800 text-white rounded border border-gray-600 focus:border-primary focus:outline-none text-sm resize-none"
+                />
               </div>
-            )}
-            
-            {/* Manual input overlay - only show when not processing */}
-            {!isProcessing && (
-              <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-80 p-4 space-y-3">
-                <div className="space-y-2">
-                  <label className="text-white text-sm font-medium">
-                    {extractedText ? "Состав распознан автоматически (можно редактировать):" : "Введите состав с упаковки:"}
-                  </label>
-                  <textarea
-                    value={extractedText}
-                    onChange={(e) => setExtractedText(e.target.value)}
-                    placeholder="Перечислите ингредиенты через запятую..."
-                    className="w-full h-24 px-3 py-2 bg-gray-800 text-white rounded border border-gray-600 focus:border-primary focus:outline-none text-sm resize-none"
-                  />
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         ) : isScanning ? (
           /* Camera View */
