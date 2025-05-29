@@ -42,7 +42,7 @@ export async function analyzeIngredientsWithGemini(
   skinProfile?: SkinProfile
 ): Promise<EnhancedProductAnalysisResult> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const systemPrompt = `You are an expert cosmetic chemist and dermatologist with access to the latest research. Analyze the provided ingredient list and provide comprehensive insights.
 
@@ -122,7 +122,7 @@ export async function getProductRecommendationsWithGemini(
   currentTrends?: string[]
 ): Promise<{ recommendations: string[]; reasoning: string; marketInsights: string[] }> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `As an expert dermatologist and cosmetic researcher, provide personalized product recommendations based on:
 
@@ -161,12 +161,75 @@ Respond with JSON:
   }
 }
 
+// Новая функция для поиска состава по названию продукта
+export async function findProductIngredients(productName: string): Promise<string> {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    const prompt = `Найди точный состав косметического продукта "${productName}". 
+    
+    Верни только список ингредиентов в том формате, как они указаны на упаковке (INCI names). 
+    Если не можешь найти точный состав, укажи это честно.
+    
+    Формат ответа: только список ингредиентов через запятую, без дополнительных пояснений.`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text() || "Состав не найден";
+  } catch (error) {
+    console.error("Error finding product ingredients:", error);
+    throw new Error("Failed to find product ingredients");
+  }
+}
+
+// Функция для генерации рекомендаций партнерских товаров
+export async function generatePartnerRecommendations(
+  analysisResult: any,
+  skinProfile?: SkinProfile
+): Promise<{ products: any[]; reasoning: string }> {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    const prompt = `На основе анализа косметического продукта и профиля кожи, предложи 3-5 альтернативных товаров для покупки.
+    
+    Анализ продукта: ${JSON.stringify(analysisResult)}
+    ${skinProfile ? `Тип кожи: ${JSON.stringify(skinProfile)}` : ''}
+    
+    Предложи конкретные продукты российских и международных брендов с указанием:
+    - Название бренда и продукта
+    - Примерная цена в рублях
+    - Где можно купить (Wildberries, Ozon, Летуаль, Рив Гош и т.д.)
+    - Краткое описание почему этот продукт подходит
+    
+    Верни в JSON формате:
+    {
+      "products": [
+        {
+          "brand": "Бренд",
+          "name": "Название продукта", 
+          "price": "1500-2000 руб",
+          "store": "Wildberries",
+          "reason": "Причина рекомендации"
+        }
+      ],
+      "reasoning": "Общее обоснование выбора"
+    }`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return JSON.parse(response.text());
+  } catch (error) {
+    console.error("Error generating partner recommendations:", error);
+    throw new Error("Failed to generate partner recommendations");
+  }
+}
+
 export async function researchIngredientSafety(
   ingredientName: string,
   skinType?: string
 ): Promise<{ safetyProfile: string; recentStudies: string[]; expertOpinions: string[] }> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `Research the latest safety profile for the cosmetic ingredient "${ingredientName}"${skinType ? ` specifically for ${skinType} skin` : ''}.
 
