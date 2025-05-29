@@ -1,10 +1,11 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save, Share2, CheckCircle, Info, Star, AlertTriangle, Microscope, TrendingUp, User } from "lucide-react";
+import { Save, Share2, CheckCircle, Info, Star, AlertTriangle, Microscope, TrendingUp, User, ChevronDown, ChevronUp } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -14,8 +15,56 @@ interface ProductAnalysisProps {
 }
 
 export default function ProductAnalysis({ product, analysis }: ProductAnalysisProps) {
+  const [showAllIngredients, setShowAllIngredients] = useState(false);
+  const [personalRecommendation, setPersonalRecommendation] = useState<string>("");
+  const [userReviews, setUserReviews] = useState<string[]>([]);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  // Получаем профиль пользователя
+  const { data: user } = useQuery({
+    queryKey: ["/api/auth/user"],
+    retry: false,
+  });
+
+  // Мутация для получения персональной рекомендации
+  const getPersonalRecommendation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("/api/analysis/personal-recommendation", {
+        method: "POST",
+        body: {
+          productName: product.name,
+          ingredients: product.ingredients || "",
+          skinProfile: {
+            skinType: user?.skinType || "",
+            skinConcerns: user?.skinConcerns || [],
+            allergies: user?.allergies || [],
+            preferences: user?.preferences || []
+          }
+        }
+      });
+      return response;
+    },
+    onSuccess: (data) => {
+      setPersonalRecommendation(data.recommendation);
+    }
+  });
+
+  // Мутация для получения отзывов пользователей
+  const getUserReviews = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("/api/analysis/user-reviews", {
+        method: "POST",
+        body: {
+          productName: product.name
+        }
+      });
+      return response;
+    },
+    onSuccess: (data) => {
+      setUserReviews(data.reviews || []);
+    }
+  });
 
   const getCompatibilityColor = (rating: string) => {
     switch (rating) {
@@ -157,7 +206,8 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
                   <h4 className="font-semibold">Ingredient Analysis</h4>
                 </div>
                 
-                {ingredients.slice(0, 10).map((ingredient: any, index: number) => (
+                {/* Список ингредиентов для отображения */}
+                {(showAllIngredients ? ingredients : ingredients.slice(0, 10)).map((ingredient: any, index: number) => (
                   <div key={index} className="p-3 bg-gray-50 rounded-lg space-y-2">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium">
@@ -189,27 +239,76 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
                   </div>
                 ))}
                 
+                {/* Кнопка для раскрытия/скрытия полного состава */}
                 {ingredients.length > 10 && (
-                  <p className="text-xs text-gray-500 text-center">
-                    And {ingredients.length - 10} more ingredients...
-                  </p>
+                  <div className="text-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-gray-500 hover:text-primary"
+                      onClick={() => setShowAllIngredients(!showAllIngredients)}
+                    >
+                      {showAllIngredients ? (
+                        <>
+                          <ChevronUp className="w-3 h-3 mr-1" />
+                          Hide ingredients
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="w-3 h-3 mr-1" />
+                          And {ingredients.length - 10} more ingredients...
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 )}
               </TabsContent>
 
               <TabsContent value="research" className="space-y-3">
                 <div className="flex items-center space-x-2 mb-4">
                   <Microscope className="w-4 h-4 text-primary" />
-                  <h4 className="font-semibold">Scientific Research</h4>
+                  <h4 className="font-semibold">Research & Reviews</h4>
                 </div>
                 
+                {/* Научные исследования */}
                 {researchSummary ? (
                   <div className="p-4 bg-blue-50 rounded-lg">
+                    <h5 className="text-sm font-medium mb-2">Scientific Research</h5>
                     <p className="text-sm text-blue-800">{researchSummary}</p>
                   </div>
                 ) : (
                   <p className="text-sm text-gray-600">Research summary not available for this analysis.</p>
                 )}
+
+                {/* Отзывы пользователей */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h5 className="text-sm font-medium">User Reviews from Internet</h5>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => getUserReviews.mutate()}
+                      disabled={getUserReviews.isPending}
+                    >
+                      {getUserReviews.isPending ? "Loading..." : "Load Reviews"}
+                    </Button>
+                  </div>
+                  
+                  {userReviews.length > 0 ? (
+                    <div className="space-y-2">
+                      {userReviews.map((review: string, index: number) => (
+                        <div key={index} className="p-3 bg-gray-50 rounded-lg border-l-3 border-purple-400">
+                          <p className="text-xs text-gray-700">{review}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : userReviews.length === 0 && !getUserReviews.isPending ? (
+                    <p className="text-xs text-gray-500">Click "Load Reviews" to see user reviews from the internet</p>
+                  ) : null}
+                </div>
                 
+                {/* Альтернативные продукты */}
                 {alternativeProducts.length > 0 && (
                   <div className="space-y-2">
                     <h5 className="text-sm font-medium">Alternative Products</h5>
@@ -269,11 +368,33 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
       )}
 
       {/* Recommendations */}
-      {insights?.recommendations?.length > 0 && (
-        <Card className="border-gray-200">
-          <CardContent className="p-4 space-y-4">
-            <h4 className="font-semibold">Recommendations</h4>
+      <Card className="border-gray-200">
+        <CardContent className="p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="font-semibold">Personal Recommendations</h4>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs"
+              onClick={() => getPersonalRecommendation.mutate()}
+              disabled={getPersonalRecommendation.isPending}
+            >
+              {getPersonalRecommendation.isPending ? "Loading..." : "Get Personal Advice"}
+            </Button>
+          </div>
+          
+          {/* Персональная рекомендация */}
+          {personalRecommendation && (
+            <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border-l-4 border-purple-400">
+              <h5 className="text-sm font-medium text-purple-800 mb-2">For Your Skin Type</h5>
+              <p className="text-sm text-purple-700">{personalRecommendation}</p>
+            </div>
+          )}
+          
+          {/* Общие рекомендации */}
+          {insights?.recommendations?.length > 0 && (
             <div className="space-y-2">
+              <h5 className="text-sm font-medium text-gray-700">General Recommendations</h5>
               {insights.recommendations.map((rec: string, index: number) => (
                 <div key={index} className="flex items-start space-x-2">
                   <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0"></div>
@@ -281,9 +402,13 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+          
+          {!personalRecommendation && !insights?.recommendations?.length && (
+            <p className="text-sm text-gray-500">Click "Get Personal Advice" to receive personalized recommendations based on your skin profile.</p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Action Buttons */}
       <div className="flex space-x-3">

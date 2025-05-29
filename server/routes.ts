@@ -185,6 +185,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Personal recommendation based on skin profile
+  app.post("/api/analysis/personal-recommendation", isAuthenticated, async (req: any, res) => {
+    try {
+      const { productName, ingredients, skinProfile } = req.body;
+      
+      if (!process.env.PERPLEXITY_API_KEY) {
+        return res.status(500).json({ message: "PERPLEXITY_API_KEY не настроен" });
+      }
+
+      const response = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: "llama-3.1-sonar-small-128k-online",
+          messages: [
+            {
+              role: "system",
+              content: "Ты опытный дерматолог и косметолог. Давай персональные советы по продуктам."
+            },
+            {
+              role: "user",
+              content: `Продукт: ${productName}
+Состав: ${ingredients}
+Профиль кожи: тип - ${skinProfile.skinType}, проблемы - ${skinProfile.skinConcerns?.join(', ')}, аллергии - ${skinProfile.allergies?.join(', ')}, предпочтения - ${skinProfile.preferences?.join(', ')}
+
+На сколько данное средство, исходя из состава подойдет моему типу кожи с учетом наличия аллергических реакций и состояния кожи? Дай ответ до 300 символов на русском языке.`
+            }
+          ],
+          max_tokens: 400,
+          temperature: 0.3,
+          top_p: 0.9,
+          search_recency_filter: "month",
+          return_images: false,
+          return_related_questions: false,
+          stream: false
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Perplexity API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const recommendation = data.choices[0]?.message?.content?.trim() || "";
+      
+      res.json({ recommendation });
+    } catch (error) {
+      console.error("Error generating personal recommendation:", error);
+      res.status(500).json({ 
+        message: "Failed to generate personal recommendation", 
+        error: (error as Error).message 
+      });
+    }
+  });
+
+  // User reviews from internet
+  app.post("/api/analysis/user-reviews", isAuthenticated, async (req: any, res) => {
+    try {
+      const { productName } = req.body;
+      
+      if (!process.env.PERPLEXITY_API_KEY) {
+        return res.status(500).json({ message: "PERPLEXITY_API_KEY не настроен" });
+      }
+
+      const response = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: "llama-3.1-sonar-small-128k-online",
+          messages: [
+            {
+              role: "system",
+              content: "Ты эксперт по анализу отзывов в интернете. Собирай реальные отзывы пользователей о косметических продуктах."
+            },
+            {
+              role: "user",
+              content: `Найди и собери отзывы пользователей о продукте "${productName}" из интернета. Ищи на сайтах отзывов, форумах, социальных сетях. Представь 3-5 кратких реальных отзыва пользователей на русском языке. Каждый отзыв должен быть до 150 символов.
+
+Ответь в JSON формате:
+{
+  "reviews": ["отзыв 1", "отзыв 2", "отзыв 3", "отзыв 4", "отзыв 5"]
+}`
+            }
+          ],
+          max_tokens: 800,
+          temperature: 0.3,
+          top_p: 0.9,
+          search_recency_filter: "month",
+          return_images: false,
+          return_related_questions: false,
+          stream: false
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Perplexity API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const text = data.choices[0]?.message?.content?.trim() || "";
+      
+      let reviews: string[] = [];
+      try {
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          reviews = parsed.reviews || [];
+        }
+      } catch (parseError) {
+        console.error("Failed to parse reviews JSON:", parseError);
+        // Fallback: extract reviews from text
+        const lines = text.split('\n').filter(line => line.trim().length > 10);
+        reviews = lines.slice(0, 5);
+      }
+      
+      res.json({ reviews });
+    } catch (error) {
+      console.error("Error fetching user reviews:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch user reviews", 
+        error: (error as Error).message 
+      });
+    }
+  });
+
   // Поиск ингредиентов по названию продукта
   app.post('/api/find-ingredients', isAuthenticated, async (req: any, res) => {
     try {
