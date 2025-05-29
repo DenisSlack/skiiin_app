@@ -46,70 +46,98 @@ export async function analyzeIngredientsWithGemini(
   skinProfile?: SkinProfile
 ): Promise<EnhancedProductAnalysisResult> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // Используем Perplexity для получения актуальных данных о каждом ингредиенте
+    if (!process.env.PERPLEXITY_API_KEY) {
+      throw new Error("PERPLEXITY_API_KEY не настроен");
+    }
 
-    const systemPrompt = `You are an expert cosmetic chemist and dermatologist with access to the latest research. Analyze the provided ingredient list and provide comprehensive insights.
+    // Ограничиваем количество ингредиентов для детального анализа
+    const ingredients = ingredientList.split(',').slice(0, 8).map(i => i.trim());
+    
+    const skinProfileText = skinProfile ? `
+Профиль кожи пользователя:
+- Тип кожи: ${skinProfile.skinType}
+- Проблемы: ${skinProfile.skinConcerns.join(', ')}
+- Аллергии: ${skinProfile.allergies.join(', ')}
+- Предпочтения: ${skinProfile.preferences.join(', ')}` : '';
 
-${skinProfile ? `Consider the user's skin profile:
-- Skin Type: ${skinProfile.skinType}
-- Concerns: ${skinProfile.skinConcerns.join(', ')}
-- Allergies: ${skinProfile.allergies.join(', ')}
-- Preferences: ${skinProfile.preferences.join(', ')}` : ''}
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: "llama-3.1-sonar-small-128k-online",
+        messages: [
+          {
+            role: "system",
+            content: "Ты ведущий эксперт косметолог и дерматолог с доступом к последним научным исследованиям. Анализируй ингредиенты косметики на основе актуальных данных из научных источников и исследований."
+          },
+          {
+            role: "user",
+            content: `Проанализируй продукт "${productName}" с составом: ${ingredients.join(', ')}
 
-For each ingredient, provide:
-1. Scientific purpose and mechanism of action
-2. Latest research findings and efficacy data
-3. Potential interactions with other ingredients
-4. Safety profile and any recent studies
-5. Suitability for the user's specific skin profile
+${skinProfileText}
 
-Also include:
-- Current market trends for this type of product
-- Expert dermatologist recommendations
-- Alternative product suggestions
-- Recent scientific breakthroughs related to these ingredients
+Для каждого из первых 8 ингредиентов найди:
+1. Научное назначение и механизм действия
+2. Последние исследования эффективности (2023-2024)
+3. Безопасность и возможные побочные эффекты
+4. Совместимость с типом кожи пользователя
+5. Взаимодействие с другими ингредиентами
 
-Respond with JSON in this exact format:
+Также включи:
+- Общая оценка совместимости (0-100)
+- Современные тренды в косметологии
+- Экспертные рекомендации дерматологов
+- Альтернативные продукты
+
+Ответь строго в JSON формате:
 {
-  "compatibilityScore": number (0-100),
-  "compatibilityRating": "excellent" | "good" | "caution" | "avoid",
+  "compatibilityScore": число_0_100,
+  "compatibilityRating": "excellent"|"good"|"caution"|"avoid",
   "ingredients": [
     {
-      "name": "ingredient name",
-      "purpose": "scientific function and mechanism",
-      "benefits": ["benefit1 with scientific backing", "benefit2"],
-      "concerns": ["concern1 with research basis", "concern2"],
-      "safetyRating": "safe" | "caution" | "avoid",
-      "compatibilityScore": number (0-100),
-      "scientificResearch": "latest research findings",
-      "expertOpinion": "dermatologist perspective"
+      "name": "название",
+      "purpose": "назначение",
+      "benefits": ["преимущество1", "преимущество2"],
+      "concerns": ["проблема1", "проблема2"],
+      "safetyRating": "safe"|"caution"|"avoid",
+      "compatibilityScore": число_0_100,
+      "scientificResearch": "последние исследования",
+      "expertOpinion": "мнение экспертов"
     }
   ],
   "insights": {
-    "positive": ["positive insight with scientific basis"],
-    "concerns": ["concern with research backing"],
-    "recommendations": ["expert recommendation"],
-    "marketTrends": ["current market trends"],
-    "expertAdvice": ["professional dermatologist advice"]
+    "positive": ["положительные стороны"],
+    "concerns": ["предупреждения"],
+    "recommendations": ["рекомендации"],
+    "marketTrends": ["рыночные тренды"],
+    "expertAdvice": ["советы экспертов"]
   },
-  "overallAssessment": "comprehensive analysis with scientific backing",
-  "researchSummary": "summary of latest relevant research",
-  "alternativeProducts": ["suggested alternative products or ingredients"]
-}`;
+  "overallAssessment": "общая оценка",
+  "researchSummary": "резюме исследований",
+  "alternativeProducts": ["альтернативы"]
+}`
+          }
+        ],
+        max_tokens: 2000,
+        temperature: 0.3,
+        top_p: 0.9,
+        search_recency_filter: "month",
+        return_images: false,
+        return_related_questions: false,
+        stream: false
+      })
+    });
 
-    // Ограничиваем количество ингредиентов для стабильного анализа
-    const ingredients = ingredientList.split(',').slice(0, 10).map(i => i.trim()).join(', ');
-    
-    const prompt = `Product: ${productName}
-Ingredients: ${ingredients}
+    if (!response.ok) {
+      throw new Error(`Perplexity API error: ${response.status}`);
+    }
 
-IMPORTANT: Analyze only the first 10 ingredients and provide a concise response. Keep JSON structure simple and valid.
-
-${systemPrompt}`;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    let text = response.text();
+    const data = await response.json();
+    let text = data.choices[0]?.message?.content?.trim() || "";
     
     // Очищаем от markdown и комментариев
     text = text
@@ -181,41 +209,72 @@ export async function getProductRecommendationsWithGemini(
   currentTrends?: string[]
 ): Promise<{ recommendations: string[]; reasoning: string; marketInsights: string[] }> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    if (!process.env.PERPLEXITY_API_KEY) {
+      throw new Error("PERPLEXITY_API_KEY не настроен");
+    }
 
-    const prompt = `As an expert dermatologist and cosmetic researcher, provide personalized product recommendations based on:
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: "llama-3.1-sonar-small-128k-online",
+        messages: [
+          {
+            role: "system",
+            content: "Ты ведущий эксперт косметолог и консультант по уходу за кожей с доступом к последним исследованиям и рыночным данным. Предоставляй персональные рекомендации на основе актуальной информации."
+          },
+          {
+            role: "user",
+            content: `Создай персональные рекомендации продуктов для пользователя:
 
-Skin Profile: ${JSON.stringify(skinProfile)}
-Previously Analyzed Products: ${JSON.stringify(analyzedProducts)}
-Current Market Trends: ${currentTrends?.join(', ') || 'General skincare trends'}
+Профиль кожи: ${JSON.stringify(skinProfile)}
+Проанализированные продукты: ${JSON.stringify(analyzedProducts)}
+Актуальные тренды: ${currentTrends?.join(', ') || 'Общие тренды ухода за кожей'}
 
-Consider:
-1. Latest scientific research in skincare
-2. Ingredient innovations and breakthroughs
-3. Clinical study results
-4. Expert dermatologist consensus
-5. Market trends and consumer feedback
-6. Ingredient synergies and incompatibilities
+Основывайся на:
+1. Последних научных исследованиях в косметологии (2023-2024)
+2. Новых прорывных ингредиентах и технологиях
+3. Клинических исследованиях эффективности
+4. Экспертных рекомендациях дерматологов
+5. Актуальных рыночных трендах
+6. Совместимости ингредиентов
 
-Respond with JSON:
+Ответь в JSON формате:
 {
-  "recommendations": ["specific product recommendations with scientific reasoning"],
-  "reasoning": "detailed explanation based on research and skin profile",
-  "marketInsights": ["current market trends and innovations relevant to this user"]
-}`;
+  "recommendations": ["конкретные рекомендации продуктов с научным обоснованием"],
+  "reasoning": "детальное объяснение на основе исследований и профиля кожи",
+  "marketInsights": ["актуальные рыночные тренды и инновации для этого пользователя"]
+}`
+          }
+        ],
+        max_tokens: 1500,
+        temperature: 0.3,
+        top_p: 0.9,
+        search_recency_filter: "month",
+        return_images: false,
+        return_related_questions: false,
+        stream: false
+      })
+    });
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    if (!response.ok) {
+      throw new Error(`Perplexity API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const text = data.choices[0]?.message?.content?.trim() || "";
     
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new Error("Invalid response format from Gemini");
+      throw new Error("Invalid response format from Perplexity");
     }
     
     return JSON.parse(jsonMatch[0]);
   } catch (error) {
-    console.error("Error generating recommendations with Gemini:", error);
+    console.error("Error generating recommendations with Perplexity:", error);
     throw new Error("Failed to generate recommendations: " + (error as Error).message);
   }
 }
