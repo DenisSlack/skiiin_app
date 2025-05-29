@@ -161,7 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Генерируем партнерские рекомендации для монетизации
       try {
-        const partnerRecommendations = await generatePartnerRecommendations(analysisResult, skinProfile);
+        const partnerRecommendations = await generatePartnerRecommendations(product.name, skinProfile);
         analysisResult.partnerRecommendations = partnerRecommendations;
       } catch (partnerError) {
         console.log("Could not generate partner recommendations:", partnerError);
