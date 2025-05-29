@@ -350,16 +350,20 @@ If no ingredients found, return: "Ingredients not available"`
           let altIngredients = altData.choices[0]?.message?.content?.trim() || "";
           console.log(`Alternative search result for ${productName}:`, altIngredients);
           
-          // Улучшенная проверка альтернативного результата
+          // Строгая проверка альтернативного результата - должен быть настоящий список ингредиентов
           if (altIngredients && 
               !altIngredients.toLowerCase().includes("not available") &&
               !altIngredients.toLowerCase().includes("not found") &&
-              !altIngredients.toLowerCase().includes("i would recommend") &&
-              !altIngredients.toLowerCase().includes("i don't have") &&
-              !altIngredients.toLowerCase().includes("official website") &&
-              !altIngredients.toLowerCase().includes("beauty websites") &&
+              !altIngredients.toLowerCase().includes("not provided") &&
+              !altIngredients.toLowerCase().includes("would be best") &&
+              !altIngredients.toLowerCase().includes("check the") &&
+              !altIngredients.toLowerCase().includes("here are some") &&
+              !altIngredients.toLowerCase().includes("might be found") &&
+              !altIngredients.toLowerCase().includes("common") &&
               altIngredients.length > 10 &&
-              altIngredients.includes(",")) { // Должен содержать запятые как список ингредиентов
+              altIngredients.includes(",") &&
+              !altIngredients.includes(".") && // Не должен содержать предложений
+              !altIngredients.includes("(")) { // Не должен содержать объяснений в скобках
             return altIngredients;
           }
         }
