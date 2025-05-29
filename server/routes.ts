@@ -135,17 +135,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Try enhanced analysis with Gemini first
         analysisResult = await analyzeIngredientsWithGemini(ingredientList, product.name, skinProfile);
         
-        // Add additional research for key ingredients
-        const topIngredients = analysisResult.ingredients.slice(0, 3);
-        for (const ingredient of topIngredients) {
-          try {
-            const safetyResearch = await researchIngredientSafety(ingredient.name, skinProfile?.skinType);
-            ingredient.scientificResearch = safetyResearch.safetyProfile;
-            ingredient.expertOpinion = safetyResearch.expertOpinions.join(' ');
-          } catch (researchError) {
-            console.log(`Could not get additional research for ${ingredient.name}`);
-          }
-        }
+        // Используем только результаты от Perplexity для обеспечения русскоязычного вывода
+        // Дополнительное исследование отключено для сохранения языка интерфейса
       } catch (geminiError) {
         console.error("Gemini analysis failed:", geminiError);
         throw new Error("Failed to analyze ingredients with AI service");
