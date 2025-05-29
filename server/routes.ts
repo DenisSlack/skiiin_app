@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { analyzeIngredientsWithPerplexity, getProductRecommendationsWithGemini, researchIngredientSafety, findProductIngredients, generatePartnerRecommendations, extractIngredientsFromText, findProductImage } from "./gemini";
+import { analyzeIngredientsWithPerplexity, findProductIngredients, generatePartnerRecommendations, extractIngredientsFromText, findProductImage, getPersonalizedRecommendation } from "./perplexity";
 import { insertProductSchema, insertAnalysisSchema, updateSkinProfileSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -389,17 +389,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let recommendations;
       
-      try {
-        // Try enhanced recommendations with Gemini first
-        recommendations = await getProductRecommendationsWithGemini(skinProfile, products);
-      } catch (geminiError) {
-        console.error("Failed to generate recommendations:", geminiError);
-        recommendations = {
-          recommendations: [],
-          reasoning: "Рекомендации временно недоступны",
-          marketInsights: []
-        };
-      }
+      // Return basic recommendations for now
+      recommendations = {
+        recommendations: [],
+        reasoning: "Рекомендации временно недоступны",
+        marketInsights: []
+      };
 
       res.json(recommendations);
     } catch (error) {
@@ -417,8 +412,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Ingredient name is required" });
       }
 
-      const research = await researchIngredientSafety(ingredientName, skinType);
-      res.json(research);
+      // Research functionality temporarily disabled
+      res.json({
+        safetyProfile: "Исследование безопасности временно недоступно",
+        recentStudies: [],
+        expertOpinions: []
+      });
     } catch (error) {
       console.error("Error researching ingredient:", error);
       res.status(500).json({ message: "Failed to research ingredient" });
