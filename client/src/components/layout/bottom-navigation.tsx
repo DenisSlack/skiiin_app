@@ -6,11 +6,11 @@ export default function BottomNavigation() {
   const [location, setLocation] = useLocation();
 
   const navItems = [
-    { path: "/", icon: Home, label: "Home" },
-    { path: "/library", icon: BookOpen, label: "Library" },
-    { path: "/scanner", icon: Camera, label: "Scan", isFloating: true },
-    { path: "/discover", icon: Sparkles, label: "Discover" },
-    { path: "/profile", icon: User, label: "Profile" },
+    { path: "/", icon: Home, label: "Главная" },
+    { path: "/library", icon: BookOpen, label: "Библиотека" },
+    { path: "/scanner", icon: Camera, label: "Сканер", isFloating: true },
+    { path: "/discover", icon: Sparkles, label: "Открыть" },
+    { path: "/profile", icon: User, label: "Профиль" },
   ];
 
   return (

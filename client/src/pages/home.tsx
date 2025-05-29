@@ -81,10 +81,10 @@ export default function Home() {
         <Card className="border-gray-200">
           <CardContent className="p-6 space-y-4">
             <div className="text-center space-y-2">
-              <h3 className="text-lg font-semibold">Enhanced AI Scanner</h3>
+              <h3 className="text-lg font-semibold">Умный AI-сканер</h3>
               <div className="flex items-center justify-center space-x-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-xs text-gray-600">Powered by Advanced AI Research</span>
+                <span className="text-xs text-gray-600">На основе продвинутого AI-анализа</span>
               </div>
             </div>
             
@@ -97,7 +97,7 @@ export default function Home() {
                   <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/60 rounded-full mx-auto flex items-center justify-center">
                     <Camera className="w-8 h-8 text-white" />
                   </div>
-                  <p className="text-gray-600 text-sm">Position ingredient list in frame</p>
+                  <p className="text-gray-600 text-sm">Поместите список ингредиентов в кадр</p>
                 </div>
               )}
             </div>
@@ -109,7 +109,7 @@ export default function Home() {
                 onClick={() => setShowScanner(true)}
               >
                 <Camera className="w-4 h-4 mr-2" />
-                Scan Ingredients
+                Сканировать состав
               </Button>
               <Button variant="outline" className="px-4">
                 <Upload className="w-4 h-4" />
@@ -123,7 +123,7 @@ export default function Home() {
                 className="text-sm text-gray-500"
                 onClick={() => setLocation("/scanner")}
               >
-                Or enter ingredients manually
+                Или введите состав вручную
               </Button>
             </div>
           </CardContent>
@@ -132,7 +132,7 @@ export default function Home() {
         {/* Recent Analysis */}
         {products.length > 0 && (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Recent Analysis</h3>
+            <h3 className="text-lg font-semibold">Последние анализы</h3>
             <div className="space-y-3">
               {products.slice(0, 3).map((product: any) => (
                 <ProductCard 
