@@ -74,7 +74,6 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
   }, [handleStartCamera]);
 
   const handleConfirm = useCallback(async () => {
-    alert("Кнопка нажата!"); // Временный тест
     console.log("handleConfirm called");
     if (!capturedImage) {
       console.log("No captured image, returning");
@@ -85,16 +84,27 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
       console.log("Setting isProcessing to true");
       setIsProcessing(true);
 
-      // Extract text using OCR if not already done
+      // Send image to server for OCR processing
       let text = extractedText;
       if (!text && capturedImage) {
-        console.log("Starting OCR extraction...");
+        console.log("Sending image to server for OCR processing...");
         try {
-          text = await extractTextFromImage(capturedImage);
-          console.log("OCR completed, text length:", text.length);
+          const ocrResponse = await fetch('/api/ocr-extract', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: capturedImage })
+          });
+          
+          if (!ocrResponse.ok) {
+            throw new Error('OCR processing failed');
+          }
+          
+          const ocrData = await ocrResponse.json();
+          text = ocrData.text || "";
+          console.log("Server OCR completed, text length:", text.length);
           setExtractedText(text);
         } catch (ocrError) {
-          console.error("OCR failed:", ocrError);
+          console.error("Server OCR failed:", ocrError);
           throw ocrError;
         }
       }

@@ -416,6 +416,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Server-side OCR processing
+  app.post('/api/ocr-extract', isAuthenticated, async (req: any, res) => {
+    try {
+      const { image } = req.body;
+      
+      if (!image) {
+        return res.status(400).json({ message: "Image is required" });
+      }
+
+      console.log("Processing OCR on server...");
+      
+      // Import Tesseract dynamically to avoid CSP issues
+      const Tesseract = await import('tesseract.js');
+      
+      const { data: { text } } = await Tesseract.recognize(image, 'eng+rus', {
+        logger: m => console.log('OCR Progress:', m.progress * 100 + '%')
+      });
+      
+      console.log("Server OCR completed, text length:", text.length);
+      res.json({ text: text.trim() });
+    } catch (error) {
+      console.error("Server OCR error:", error);
+      res.status(500).json({ message: "Failed to process OCR" });
+    }
+  });
+
   // Extract product name from text
   app.post('/api/extract-product-name', isAuthenticated, async (req: any, res) => {
     try {
