@@ -319,7 +319,7 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
               disabled={isProcessing}
             >
               <RotateCcw className="w-4 h-4 mr-2" />
-              Retake
+              Повторить
             </Button>
             <Button
               className="flex-1 app-gradient text-white"
@@ -327,7 +327,7 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
               disabled={isProcessing || !extractedText}
             >
               <Check className="w-4 h-4 mr-2" />
-              Use This
+              Использовать
             </Button>
           </div>
         ) : (
