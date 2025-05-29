@@ -38,8 +38,8 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
     } catch (error) {
       console.error("Failed to start camera:", error);
       toast({
-        title: "Camera Error",
-        description: "Unable to access camera. Please check permissions.",
+        title: "Ошибка камеры",
+        description: "Не удается получить доступ к камере. Проверьте разрешения.",
         variant: "destructive",
       });
       setIsScanning(false);
@@ -68,16 +68,16 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
         onResult?.(text, result.ingredients);
       } else {
         toast({
-          title: "No Text Found",
-          description: "Unable to detect text in the image. Please try again.",
+          title: "Текст не найден",
+          description: "Не удалось обнаружить текст на изображении. Попробуйте еще раз.",
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Failed to process image:", error);
       toast({
-        title: "Processing Error",
-        description: "Failed to process the image. Please try again.",
+        title: "Ошибка обработки",
+        description: "Не удалось обработать изображение. Попробуйте еще раз.",
         variant: "destructive",
       });
     } finally {
@@ -157,8 +157,8 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
     // Check if file is an image
     if (!file.type.startsWith('image/')) {
       toast({
-        title: "Invalid File",
-        description: "Please select an image file (JPG, PNG, etc.)",
+        title: "Неверный формат файла",
+        description: "Выберите файл изображения (JPG, PNG и т.д.)",
         variant: "destructive",
       });
       return;
@@ -186,8 +186,8 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
           onResult?.(text, result.ingredients);
         } else {
           toast({
-            title: "No Text Found",
-            description: "Unable to detect text in the image. Please try a clearer photo.",
+            title: "Текст не найден",
+            description: "Не удалось обнаружить текст на изображении. Попробуйте более четкое фото.",
             variant: "destructive",
           });
         }
@@ -216,7 +216,7 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
     <div className="fixed inset-0 bg-black z-50 flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between p-4 bg-black text-white">
-        <h3 className="text-lg font-semibold">Scan Ingredients</h3>
+        <h3 className="text-lg font-semibold">Сканировать состав</h3>
         <Button variant="ghost" size="sm" onClick={onClose} className="text-white">
           <X className="w-5 h-5" />
         </Button>
@@ -236,7 +236,7 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
               <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                 <div className="text-center text-white space-y-4">
                   <div className="w-8 h-8 animate-spin mx-auto border-2 border-white border-t-transparent rounded-full" />
-                  <p>Processing image...</p>
+                  <p>Обработка изображения...</p>
                 </div>
               </div>
             )}
