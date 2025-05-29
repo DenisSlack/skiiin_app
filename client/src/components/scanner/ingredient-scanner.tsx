@@ -132,11 +132,19 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
           onResult?.(data.ingredients);
         }
       } else {
+        const message = data.message || "Не удалось найти состав этого продукта. Попробуйте сканирование.";
         toast({
           title: "Состав не найден",
-          description: "Не удалось найти состав этого продукта. Попробуйте сканирование.",
+          description: message,
           variant: "destructive",
         });
+        
+        if (data.suggestScanning) {
+          // Автоматически переключаемся на режим сканирования камерой
+          setTimeout(() => {
+            setActiveTab("camera");
+          }, 2000);
+        }
       }
     } catch (error) {
       console.error("Failed to search product:", error);

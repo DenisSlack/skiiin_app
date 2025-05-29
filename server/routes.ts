@@ -345,6 +345,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const ingredients = await findProductIngredients(productName);
+      
+      // Если состав не найден, предлагаем пользователю сканирование
+      if (!ingredients || ingredients.length === 0) {
+        return res.json({ 
+          ingredients: "",
+          message: "Не удалось найти состав продукта в базе данных. Попробуйте отсканировать ингредиенты с упаковки с помощью камеры.",
+          suggestScanning: true
+        });
+      }
+      
       res.json({ ingredients });
     } catch (error) {
       console.error("Error finding ingredients:", error);
