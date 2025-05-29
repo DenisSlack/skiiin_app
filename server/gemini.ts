@@ -377,7 +377,14 @@ export async function findProductIngredients(productName: string): Promise<strin
 // Функция для извлечения ингредиентов из текста
 export async function extractIngredientsFromText(inputText: string): Promise<string[]> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash-8b",
+      generationConfig: {
+        temperature: 0.1,
+        topP: 0.8,
+        maxOutputTokens: 500,
+      }
+    });
 
     const prompt = `Извлеки все косметические ингредиенты из данного текста. Верни только чистый список ингредиентов в формате JSON.
     
@@ -427,7 +434,14 @@ export async function generatePartnerRecommendations(
   skinProfile?: SkinProfile
 ): Promise<{ products: any[]; reasoning: string }> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash-8b",
+      generationConfig: {
+        temperature: 0.2,
+        topP: 0.8,
+        maxOutputTokens: 600,
+      }
+    });
 
     const prompt = `На основе анализа косметического продукта и профиля кожи, предложи 3-5 альтернативных товаров для покупки.
     
@@ -482,7 +496,14 @@ export async function researchIngredientSafety(
   skinType?: string
 ): Promise<{ safetyProfile: string; recentStudies: string[]; expertOpinions: string[] }> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash-8b",
+      generationConfig: {
+        temperature: 0.1,
+        topP: 0.8,
+        maxOutputTokens: 400,
+      }
+    });
 
     const prompt = `Research the latest safety profile for the cosmetic ingredient "${ingredientName}"${skinType ? ` specifically for ${skinType} skin` : ''}.
 
