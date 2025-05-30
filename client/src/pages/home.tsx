@@ -34,13 +34,13 @@ export default function Home() {
 
   // Auto-show onboarding for users without completed profile
   useEffect(() => {
-    if (user && !user.profileCompleted && !showSkinProfile) {
+    if (user && !(user as any).profileCompleted && !showSkinProfile) {
       setShowOnboarding(true);
     }
   }, [user, showSkinProfile]);
 
   // Check if user needs onboarding
-  const shouldShowOnboarding = user && !user.profileCompleted && showOnboarding && !showSkinProfile;
+  const shouldShowOnboarding = user && !(user as any).profileCompleted && showOnboarding && !showSkinProfile;
 
   if (userLoading) {
     return (
@@ -71,15 +71,15 @@ export default function Home() {
         {/* Quick Stats Cards */}
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl text-center">
-            <div className="text-2xl font-bold text-green-600">{stats?.analyzedProducts || 0}</div>
+            <div className="text-2xl font-bold text-green-600">{(stats as any)?.analyzedProducts || 0}</div>
             <div className="text-xs text-green-700 font-medium">Проанализировано</div>
           </div>
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl text-center">
-            <div className="text-2xl font-bold text-blue-600">{stats?.compatibility || 0}%</div>
+            <div className="text-2xl font-bold text-blue-600">{(stats as any)?.compatibility || 0}%</div>
             <div className="text-xs text-blue-700 font-medium">Совместимость</div>
           </div>
           <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl text-center">
-            <div className="text-2xl font-bold text-purple-600">{stats?.savedMoney || 0}₽</div>
+            <div className="text-2xl font-bold text-purple-600">{(stats as any)?.savedMoney || 0}₽</div>
             <div className="text-xs text-purple-700 font-medium">Сэкономлено</div>
           </div>
         </div>
@@ -137,11 +137,11 @@ export default function Home() {
         </Card>
 
         {/* Recent Analysis */}
-        {products.length > 0 && (
+        {(products as any[]).length > 0 && (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Последние анализы</h3>
             <div className="space-y-3">
-              {products.slice(0, 3).map((product: any) => (
+              {(products as any[]).slice(0, 3).map((product: any) => (
                 <ProductCard 
                   key={product.id} 
                   product={product}

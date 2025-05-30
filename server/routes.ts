@@ -817,9 +817,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Extraction completed, ingredients count:", ingredients?.length || 0);
       
       res.json({ ingredients });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error extracting ingredients:", error);
-      console.error("Error stack:", error.stack);
+      if (error instanceof Error) {
+        console.error("Error stack:", error.stack);
+      }
       res.status(500).json({ message: "Failed to extract ingredients" });
     }
   });
@@ -1017,7 +1019,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
       
       if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-        req.session.adminSession = { isAuthenticated: true, username };
+        (req.session as any).adminSession = { isAuthenticated: true, username };
         res.json({ success: true, message: "Admin login successful" });
       } else {
         res.status(401).json({ message: "Invalid admin credentials" });

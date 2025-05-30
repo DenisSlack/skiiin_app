@@ -58,6 +58,8 @@ async function upsertUser(
 ) {
   await storage.upsertUser({
     id: claims["sub"],
+    username: claims["sub"], // Use sub as username for Replit users
+    password: "", // No password needed for Replit auth
     email: claims["email"],
     firstName: claims["first_name"],
     lastName: claims["last_name"],
