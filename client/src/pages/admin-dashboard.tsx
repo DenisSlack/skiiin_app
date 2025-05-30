@@ -35,6 +35,17 @@ export default function AdminDashboard() {
 
   const { data: tableData } = useQuery({
     queryKey: ["/api/admin/table", selectedTable, searchTerm],
+    queryFn: async () => {
+      const url = `/api/admin/table/${selectedTable}${searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : ''}`;
+      console.log('Frontend: Making request to:', url);
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log('Frontend: Received data:', data);
+      return data;
+    },
   });
 
   const { data: tables } = useQuery({
