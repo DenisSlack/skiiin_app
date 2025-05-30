@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import AppHeader from "@/components/layout/app-header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
@@ -32,8 +32,15 @@ export default function Home() {
     queryKey: ["/api/products"],
   });
 
+  // Auto-show onboarding for users without completed profile
+  useEffect(() => {
+    if (user && !user.profileCompleted && !showSkinProfile) {
+      setShowOnboarding(true);
+    }
+  }, [user, showSkinProfile]);
+
   // Check if user needs onboarding
-  const shouldShowOnboarding = user && !user.profileCompleted && !showOnboarding && !showSkinProfile;
+  const shouldShowOnboarding = user && !user.profileCompleted && showOnboarding && !showSkinProfile;
 
   if (userLoading) {
     return (
