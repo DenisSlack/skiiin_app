@@ -194,12 +194,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         verified: false
       });
 
-      // Send SMS
+      // Try to send SMS, but continue even if it fails for demo purposes
       const smsSent = await sendSMSCode({ phone, code });
       
       if (!smsSent) {
-        return res.status(500).json({ 
-          message: "Не удалось отправить SMS. Проверьте настройки SMS-сервиса." 
+        // For demo purposes, log the code so it can be used for testing
+        console.log(`SMS код для демонстрации (телефон ${phone}): ${code}`);
+        
+        return res.json({ 
+          message: "SMS сервис временно недоступен. Для демонстрации используйте код: " + code,
+          phone,
+          demoCode: code // Only for testing
         });
       }
 
