@@ -747,7 +747,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Alternative endpoint path for product ingredient search
-  app.post('/api/products/find-ingredients', requireAuth, async (req: any, res) => {
+  app.post('/api/products/find-ingredients', async (req: any, res) => {
     try {
       const { productName } = req.body;
       
