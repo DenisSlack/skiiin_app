@@ -1003,9 +1003,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin stats
   app.get('/api/admin/stats', adminAuth, async (req, res) => {
     try {
-      const { data: users } = await supabase.from('users').select('count');
-      const { data: products } = await supabase.from('products').select('count');
-      const { data: analyses } = await supabase.from('analyses').select('count');
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('*');
+      
+      const { data: products, error: productsError } = await supabase
+        .from('products')
+        .select('*');
+      
+      const { data: analyses, error: analysesError } = await supabase
+        .from('analyses')
+        .select('*');
+
+      if (usersError) console.error("Users error:", usersError);
+      if (productsError) console.error("Products error:", productsError);
+      if (analysesError) console.error("Analyses error:", analysesError);
 
       res.json({
         userCount: users?.length || 0,
@@ -1029,10 +1041,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { tableName } = req.params;
       const { search } = req.query;
 
+      console.log(`Fetching data for table: ${tableName}, search: ${search}`);
+
       let query = supabase.from(tableName).select('*').limit(100);
 
       // Add search functionality for text fields
-      if (search && typeof search === 'string') {
+      if (search && typeof search === 'string' && search.trim() !== '') {
         if (tableName === 'users') {
           query = query.or(`username.ilike.%${search}%, email.ilike.%${search}%`);
         } else if (tableName === 'products') {
@@ -1043,9 +1057,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { data, error } = await query;
 
       if (error) {
+        console.error(`Supabase error for ${tableName}:`, error);
         throw error;
       }
 
+      console.log(`Found ${data?.length || 0} records in ${tableName}`);
       res.json(data || []);
     } catch (error) {
       console.error(`Error fetching ${req.params.tableName} data:`, error);
