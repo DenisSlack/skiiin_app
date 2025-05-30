@@ -11,6 +11,8 @@ import Scanner from "@/pages/scanner";
 import Analysis from "@/pages/analysis";
 import Library from "@/pages/library";
 import Profile from "@/pages/profile";
+import AdminLogin from "@/pages/admin-login";
+import AdminDashboard from "@/pages/admin-dashboard";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -33,6 +35,10 @@ function Router() {
 
   return (
     <Switch>
+      {/* Admin routes - accessible without regular authentication */}
+      <Route path="/admin" component={AdminLogin} />
+      <Route path="/admin/dashboard" component={AdminDashboard} />
+      
       {!isAuthenticated ? (
         <>
           <Route path="/" component={Landing} />

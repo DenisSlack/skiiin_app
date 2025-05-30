@@ -164,6 +164,16 @@ export default function Home() {
         isOpen={showSkinProfile}
         onClose={() => setShowSkinProfile(false)}
       />
+
+      {/* Admin Link Footer */}
+      <div className="fixed bottom-4 left-0 right-0 text-center pb-20">
+        <button
+          onClick={() => setLocation('/admin')}
+          className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          Вход для администратора
+        </button>
+      </div>
     </div>
   );
 }
