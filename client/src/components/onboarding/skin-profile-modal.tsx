@@ -47,26 +47,26 @@ export default function SkinProfileModal({ isOpen, onClose }: SkinProfileModalPr
   });
 
   const skinTypes = [
-    { value: "oily", label: "Oily", description: "Shiny, enlarged pores, prone to acne" },
-    { value: "dry", label: "Dry", description: "Tight, flaky, rough texture" },
-    { value: "combination", label: "Combination", description: "Oily T-zone, dry or normal cheeks" },
-    { value: "sensitive", label: "Sensitive", description: "Easily irritated, reactive to products" },
-    { value: "normal", label: "Normal", description: "Balanced, rarely problematic" },
+    { value: "oily", label: "Жирная", description: "Блестящая, расширенные поры, склонность к акне" },
+    { value: "dry", label: "Сухая", description: "Стянутость, шелушение, грубая текстура" },
+    { value: "combination", label: "Комбинированная", description: "Жирная T-зона, сухие или нормальные щеки" },
+    { value: "sensitive", label: "Чувствительная", description: "Легко раздражается, реагирует на продукты" },
+    { value: "normal", label: "Нормальная", description: "Сбалансированная, редко проблемная" },
   ];
 
   const concernOptions = [
-    "Acne", "Aging", "Dark spots", "Sensitivity", "Dryness", "Oiliness", 
-    "Large pores", "Dullness", "Wrinkles", "Redness"
+    "Акне", "Старение", "Темные пятна", "Чувствительность", "Сухость", "Жирность", 
+    "Расширенные поры", "Тусклость", "Морщины", "Покраснения"
   ];
 
   const allergyOptions = [
-    "Fragrances", "Sulfates", "Parabens", "Alcohol", "Essential oils",
-    "Retinoids", "Alpha hydroxy acids", "Beta hydroxy acids"
+    "Ароматизаторы", "Сульфаты", "Парабены", "Спирт", "Эфирные масла",
+    "Ретиноиды", "Альфа-гидроксикислоты", "Бета-гидроксикислоты"
   ];
 
   const preferenceOptions = [
-    "Cruelty-free", "Vegan", "Natural ingredients", "Organic", 
-    "Fragrance-free", "Paraben-free", "Sulfate-free"
+    "Не тестируется на животных", "Веганские продукты", "Натуральные ингредиенты", "Органические", 
+    "Без ароматизаторов", "Без парабенов", "Без сульфатов"
   ];
 
   const totalSteps = 4;
@@ -109,7 +109,7 @@ export default function SkinProfileModal({ isOpen, onClose }: SkinProfileModalPr
       <Card className="w-full max-w-sm max-h-[90vh] overflow-y-auto animate-slide-up">
         <CardContent className="p-6 space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-xl font-bold">Skin Profile Setup</h3>
+            <h3 className="text-xl font-bold">Профиль кожи</h3>
             <Button variant="ghost" size="sm" onClick={onClose}>
               <X className="w-4 h-4" />
             </Button>
@@ -119,8 +119,8 @@ export default function SkinProfileModal({ isOpen, onClose }: SkinProfileModalPr
           <div className="space-y-2">
             <Progress value={progress} className="h-2" />
             <div className="flex justify-between text-xs text-gray-600">
-              <span>Step {currentStep} of {totalSteps}</span>
-              <span>{Math.round(progress)}% complete</span>
+              <span>Шаг {currentStep} из {totalSteps}</span>
+              <span>{Math.round(progress)}% завершено</span>
             </div>
           </div>
           
@@ -129,8 +129,8 @@ export default function SkinProfileModal({ isOpen, onClose }: SkinProfileModalPr
             {currentStep === 1 && (
               <>
                 <div>
-                  <h4 className="font-semibold mb-2">What's your skin type?</h4>
-                  <p className="text-sm text-gray-600 mb-4">This helps us understand your skin's characteristics</p>
+                  <h4 className="font-semibold mb-2">Какой у вас тип кожи?</h4>
+                  <p className="text-sm text-gray-600 mb-4">Это поможет нам понять особенности вашей кожи</p>
                 </div>
                 
                 <div className="space-y-3">
@@ -160,8 +160,8 @@ export default function SkinProfileModal({ isOpen, onClose }: SkinProfileModalPr
             {currentStep === 2 && (
               <>
                 <div>
-                  <h4 className="font-semibold mb-2">What are your main skin concerns?</h4>
-                  <p className="text-sm text-gray-600 mb-4">Select all that apply (optional)</p>
+                  <h4 className="font-semibold mb-2">Какие у вас основные проблемы с кожей?</h4>
+                  <p className="text-sm text-gray-600 mb-4">Выберите все подходящие варианты (необязательно)</p>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-3">
@@ -190,8 +190,8 @@ export default function SkinProfileModal({ isOpen, onClose }: SkinProfileModalPr
             {currentStep === 3 && (
               <>
                 <div>
-                  <h4 className="font-semibold mb-2">Do you have any known allergies?</h4>
-                  <p className="text-sm text-gray-600 mb-4">Select any ingredients you're allergic to (optional)</p>
+                  <h4 className="font-semibold mb-2">Есть ли у вас известные аллергии?</h4>
+                  <p className="text-sm text-gray-600 mb-4">Выберите ингредиенты, на которые у вас аллергия (необязательно)</p>
                 </div>
                 
                 <div className="space-y-2">
@@ -220,8 +220,8 @@ export default function SkinProfileModal({ isOpen, onClose }: SkinProfileModalPr
             {currentStep === 4 && (
               <>
                 <div>
-                  <h4 className="font-semibold mb-2">Any product preferences?</h4>
-                  <p className="text-sm text-gray-600 mb-4">Select your preferences (optional)</p>
+                  <h4 className="font-semibold mb-2">Какие у вас предпочтения к продуктам?</h4>
+                  <p className="text-sm text-gray-600 mb-4">Выберите ваши предпочтения (необязательно)</p>
                 </div>
                 
                 <div className="space-y-2">
