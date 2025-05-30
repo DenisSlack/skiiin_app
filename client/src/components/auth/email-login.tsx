@@ -10,9 +10,10 @@ import { apiRequest } from "@/lib/queryClient";
 
 interface LoginProps {
   onSuccess: () => void;
+  onSwitchToSms?: () => void;
 }
 
-export default function Login({ onSuccess }: LoginProps) {
+export default function Login({ onSuccess, onSwitchToSms }: LoginProps) {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [formData, setFormData] = useState({
     username: '',
@@ -211,18 +212,32 @@ export default function Login({ onSuccess }: LoginProps) {
               )}
             </Button>
 
-            <Button 
-              type="button" 
-              variant="ghost" 
-              className="w-full" 
-              onClick={switchMode}
-              disabled={isLoading}
-            >
-              {mode === 'login' 
-                ? 'Нет аккаунта? Зарегистрируйтесь'
-                : 'Уже есть аккаунт? Войдите'
-              }
-            </Button>
+            <div className="space-y-2">
+              <Button 
+                type="button" 
+                variant="ghost" 
+                className="w-full" 
+                onClick={switchMode}
+                disabled={isLoading}
+              >
+                {mode === 'login' 
+                  ? 'Нет аккаунта? Зарегистрируйтесь'
+                  : 'Уже есть аккаунт? Войдите'
+                }
+              </Button>
+
+              {mode === 'login' && onSwitchToSms && (
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={onSwitchToSms}
+                  disabled={isLoading}
+                >
+                  Войти через SMS
+                </Button>
+              )}
+            </div>
           </form>
         </CardContent>
       </Card>
