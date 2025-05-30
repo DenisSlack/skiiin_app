@@ -510,4 +510,37 @@ export class SupabaseStorage implements IStorage {
       console.error('Error cleaning up expired SMS codes:', error);
     }
   }
+
+  async updateIngredient(name: string, data: Partial<Ingredient>): Promise<Ingredient> {
+    try {
+      const { data: updated, error } = await supabase
+        .from('ingredients')
+        .update({ ...data, updated_at: new Date().toISOString() })
+        .eq('name', name)
+        .select()
+        .single();
+      if (error) {
+        handleSupabaseError(error);
+      }
+      return updated;
+    } catch (error) {
+      console.error('Error updating ingredient:', error);
+      throw error;
+    }
+  }
+
+  async deleteIngredient(name: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('ingredients')
+        .delete()
+        .eq('name', name);
+      if (error) {
+        handleSupabaseError(error);
+      }
+    } catch (error) {
+      console.error('Error deleting ingredient:', error);
+      throw error;
+    }
+  }
 }

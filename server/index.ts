@@ -1,10 +1,77 @@
+import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { setupVite, serveStatic } from "./vite";
+import rateLimit from 'express-rate-limit';
+import morgan from 'morgan';
+import logger, { stream } from './logger';
+import { errorHandler } from './middleware/errorHandler';
+import cors from 'cors';
+import helmet from 'helmet';
+import { metricsMiddleware } from './lib/metrics';
+import csurf from 'csurf';
+// OpenAPI документация временно отключена
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+
+// Базовые middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    useDefaults: true,
+    directives: {
+      "default-src": ["'self'"],
+      "script-src": ["'self'", "'unsafe-eval'", "'unsafe-inline'", "blob:", "data:", "'wasm-unsafe-eval'"],
+      "worker-src": ["'self'", "blob:", "data:"],
+      "connect-src": ["'self'", "https://api.perplexity.ai", "https://generativelanguage.googleapis.com", "blob:", "data:"],
+      "img-src": ["'self'", "data:", "blob:", "https:"],
+      "media-src": ["'self'", "blob:", "data:"],
+      "object-src": ["'none'"],
+      "base-uri": ["'self'"],
+      "style-src": ["'self'", "'unsafe-inline'"]
+    }
+  },
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+  frameguard: { action: "deny" },
+  xssFilter: true,
+  noSniff: true,
+  hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+}));
+
+// Дополнительные заголовки безопасности
+app.use((req, res, next) => {
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  next();
+});
+
+app.use(cors());
+
+// Rate limiting для всех API
+app.use('/api', rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 минут
+  max: 100, // максимум 100 запросов с одного IP за 15 минут
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Слишком много запросов с этого IP, попробуйте позже.'
+}));
+
+// Более строгий rate limiting для логина и регистрации
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 минут
+  max: 5, // максимум 5 попыток
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Слишком много попыток входа или регистрации. Попробуйте позже.'
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+
+// Централизованное логирование запросов
+app.use(morgan('combined', { stream }));
 
 // Set trust proxy for session cookies to work properly
 app.set("trust proxy", 1);
@@ -49,23 +116,54 @@ app.use((req, res, next) => {
         logLine = logLine.slice(0, 79) + "…";
       }
 
-      log(logLine);
+      logger.info(logLine);
     }
   });
 
   next();
 });
 
+// Метрики
+app.get('/metrics', metricsMiddleware);
+
+// CSRF middleware (cookie-based)
+app.use(csurf({ cookie: true }));
+
+// Эндпоинт для получения CSRF-токена
+app.get('/api/csrf-token', (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
+
+// --- Swagger/OpenAPI ---
+const registry = new OpenAPIRegistry();
+registry.register('LoginInput', loginSchema);
+registry.register('RegisterInput', registerSchema);
+registry.register('ProductInput', productSchema);
+registry.register('ProductUpdateInput', productUpdateSchema);
+registry.register('ProductQueryInput', productQuerySchema);
+registry.register('ScanInput', scanSchema);
+registry.register('IngredientsInput', ingredientsSchema);
+// Зарегистрируйте другие схемы по аналогии
+
+const generator = new OpenApiGeneratorV3(registry.definitions);
+const openApiDoc = generator.generateDocument({
+  openapi: '3.0.0',
+  info: {
+    title: 'Cosmetic API',
+    version: '1.0.0',
+    description: 'Документация API для сервиса анализа косметики',
+  },
+  servers: [{ url: '/api' }],
+});
+
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openApiDoc));
+// --- Swagger/OpenAPI ---
+
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
-    throw err;
-  });
+  // Важно: обработчик ошибок должен быть последним middleware
+  app.use(errorHandler);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
@@ -85,6 +183,6 @@ app.use((req, res, next) => {
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    logger.info(`Server started on port ${port}`);
   });
 })();

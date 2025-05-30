@@ -8,12 +8,21 @@ import { insertProductSchema, insertAnalysisSchema, updateSkinProfileSchema, log
 import { sendSMSCode, generateSMSCode } from "./smsService";
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import authRoutes from './routes/authRoutes';
+import userRoutes from './routes/userRoutes';
+import productRoutes from './routes/productRoutes';
+import analysisRoutes from './routes/analysisRoutes';
+import ingredientRoutes from './routes/ingredientRoutes';
+import smsRoutes from './routes/smsRoutes';
+import aiRoutes from './routes/aiRoutes';
+import imageRoutes from './routes/imageRoutes';
+import { z } from "zod";
+import { limitImageSize } from './middleware/limitImageSize';
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
-import { z } from "zod";
 
 // Unified authentication middleware
 const requireAuth = async (req: any, res: any, next: any) => {
@@ -66,6 +75,23 @@ const requireAuth = async (req: any, res: any, next: any) => {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
+
+  // Подключение authRoutes
+  app.use(authRoutes);
+  // Подключение userRoutes
+  app.use(userRoutes);
+  // Подключение productRoutes
+  app.use(productRoutes);
+  // Подключение analysisRoutes
+  app.use(analysisRoutes);
+  // Подключение ingredientRoutes
+  app.use(ingredientRoutes);
+  // Подключение smsRoutes
+  app.use(smsRoutes);
+  // Подключение aiRoutes
+  app.use(aiRoutes);
+  // Подключение imageRoutes
+  app.use(imageRoutes);
 
   // Simple login/password authentication routes
   app.post('/api/auth/register', async (req, res) => {
@@ -913,7 +939,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Server-side OCR processing
-  app.post('/api/ocr-extract', requireAuth, async (req: any, res) => {
+  app.post('/api/ocr-extract', requireAuth, limitImageSize('image'), async (req: any, res) => {
     try {
       const { image } = req.body;
       
