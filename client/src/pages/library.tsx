@@ -6,7 +6,7 @@ import ProductCard from "@/components/ui/product-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Star, AlertCircle, Plus } from "lucide-react";
+import { History, Star, AlertCircle, Plus } from "lucide-react";
 
 export default function Library() {
   const [, setLocation] = useLocation();
@@ -44,8 +44,8 @@ export default function Library() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <BookOpen className="w-6 h-6 text-primary" />
-            <h2 className="text-xl font-semibold">Моя библиотека</h2>
+            <History className="w-6 h-6 text-primary" />
+            <h2 className="text-xl font-semibold">Моя история</h2>
           </div>
           <Button
             size="sm"
@@ -62,11 +62,11 @@ export default function Library() {
           <Card className="border-gray-200">
             <CardContent className="p-8 text-center space-y-4">
               <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto flex items-center justify-center">
-                <BookOpen className="w-8 h-8 text-gray-400" />
+                <History className="w-8 h-8 text-gray-400" />
               </div>
               <div className="space-y-2">
                 <h3 className="text-lg font-semibold">Пока нет продуктов</h3>
-                <p className="text-gray-600 text-sm">Начните сканирование первого продукта для создания персональной библиотеки</p>
+                <p className="text-gray-600 text-sm">Начните сканирование первого продукта для создания персональной истории</p>
               </div>
               <Button
                 onClick={() => setLocation("/scanner")}

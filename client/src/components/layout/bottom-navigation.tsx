@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Home, BookOpen, Camera, Sparkles, User } from "lucide-react";
+import { Home, History, Camera, Sparkles, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function BottomNavigation() {
@@ -7,7 +7,7 @@ export default function BottomNavigation() {
 
   const navItems = [
     { path: "/", icon: Home, label: "Главная" },
-    { path: "/library", icon: BookOpen, label: "Библиотека" },
+    { path: "/library", icon: History, label: "История" },
     { path: "/scanner", icon: Camera, label: "Сканер", isFloating: true },
     { path: "/discover", icon: Sparkles, label: "Открыть" },
     { path: "/profile", icon: User, label: "Профиль" },
