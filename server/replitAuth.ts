@@ -26,12 +26,21 @@ export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   const pgStore = connectPg(session);
   const databaseUrl = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
+  
+  // Parse the connection string to extract components for pooler connection
+  const url = new URL(databaseUrl!);
   const sessionStore = new pgStore({
-    conString: databaseUrl,
-    createTableIfMissing: true, // Allow Supabase to create the sessions table
+    host: url.hostname,
+    port: parseInt(url.port),
+    database: url.pathname.slice(1),
+    user: url.username,
+    password: url.password,
+    ssl: { rejectUnauthorized: false },
+    createTableIfMissing: true,
     ttl: sessionTtl,
     tableName: "sessions",
   });
+  
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
