@@ -206,7 +206,7 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
         headers.Authorization = `Bearer ${token}`;
       }
 
-      const response = await fetch('/api/find-ingredients', {
+      const response = await fetch('/api/products/find-ingredients', {
         method: 'POST',
         headers,
         credentials: 'include',

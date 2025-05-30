@@ -147,36 +147,39 @@ export async function findProductIngredients(productName: string): Promise<strin
     
     if (dashedIngredients.length >= 3) {
       ingredientLines = dashedIngredients;
-    } else if (ingredientLines.length < 3) {
-      // Попробуем альтернативные методы
+    }
+    
+    // Если дефисы не сработали, пробуем другие методы
+    if (ingredientLines.length < 3) {
       for (const pattern of patterns) {
-      const matches = rawResponse.match(pattern);
-      if (matches && matches.length > 0) {
-        for (const match of matches) {
-          // Очищаем захваченный текст
-          let cleanMatch = match.replace(/^[:\s"]+|["\s.]+$/g, '').trim();
-          
-          // Проверяем, что это похоже на список ингредиентов
-          if (cleanMatch.includes(',') && cleanMatch.length > 20) {
-            const parts = cleanMatch.split(',').map(part => part.trim());
+        const matches = rawResponse.match(pattern);
+        if (matches && matches.length > 0) {
+          for (const match of matches) {
+            // Очищаем захваченный текст
+            let cleanMatch = match.replace(/^[:\s"]+|["\s.]+$/g, '').trim();
             
-            // Фильтруем валидные ингредиенты
-            const validIngredients = parts.filter(part => {
-              return part.length > 1 && 
-                     part.match(/^[A-Za-z]/) && 
-                     !part.toLowerCase().includes('here is') &&
-                     !part.toLowerCase().includes('you would') &&
-                     !part.toLowerCase().includes('the complete') &&
-                     !part.toLowerCase().includes('ingredients list');
-            });
-            
-            if (validIngredients.length >= 3) {
-              ingredientLines = validIngredients;
-              break;
+            // Проверяем, что это похоже на список ингредиентов
+            if (cleanMatch.includes(',') && cleanMatch.length > 20) {
+              const parts = cleanMatch.split(',').map(part => part.trim());
+              
+              // Фильтруем валидные ингредиенты
+              const validIngredients = parts.filter(part => {
+                return part.length > 1 && 
+                       part.match(/^[A-Za-z]/) && 
+                       !part.toLowerCase().includes('here is') &&
+                       !part.toLowerCase().includes('you would') &&
+                       !part.toLowerCase().includes('the complete') &&
+                       !part.toLowerCase().includes('ingredients list');
+              });
+              
+              if (validIngredients.length >= 3) {
+                ingredientLines = validIngredients;
+                break;
+              }
             }
           }
+          if (ingredientLines.length >= 3) break;
         }
-        if (ingredientLines.length >= 3) break;
       }
     }
     
