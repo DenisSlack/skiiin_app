@@ -89,9 +89,18 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
       if (!text && capturedImage) {
         console.log("Attempting automatic text extraction...");
         try {
+          const ocrHeaders: any = { 'Content-Type': 'application/json' };
+          
+          // Add authorization token if available
+          const token = localStorage.getItem('auth_token');
+          if (token) {
+            ocrHeaders.Authorization = `Bearer ${token}`;
+          }
+
           const ocrResponse = await fetch('/api/extract-text', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: ocrHeaders,
+            credentials: 'include',
             body: JSON.stringify({ imageData: capturedImage })
           });
           
@@ -189,9 +198,18 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
     try {
       setIsProcessing(true);
       
+      const headers: any = { 'Content-Type': 'application/json' };
+      
+      // Add authorization token if available
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       const response = await fetch('/api/find-ingredients', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
+        credentials: 'include',
         body: JSON.stringify({ productName: productName.trim() })
       });
 
