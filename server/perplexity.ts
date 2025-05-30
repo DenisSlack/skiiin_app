@@ -125,15 +125,19 @@ export async function findProductIngredients(productName: string): Promise<strin
     for (const line of lines) {
       const trimmedLine = line.trim();
       if (trimmedLine.startsWith('- ')) {
-        const ingredient = trimmedLine.substring(2).trim();
+        let ingredient = trimmedLine.substring(2).trim();
+        
+        // Очищаем от ссылок и дополнительной информации
+        ingredient = ingredient.replace(/\[.*?\]$/, '').trim(); // Убираем [1], [2] и т.д.
+        ingredient = ingredient.replace(/\s*\/\s*.*$/, '').trim(); // Убираем / WATER
         
         // Проверяем, что это действительно ингредиент
         if (ingredient.length > 2 && 
             ingredient.match(/^[A-Z0-9]/i) && // Начинается с буквы или цифры
             !ingredient.toLowerCase().includes('here is') &&
             !ingredient.toLowerCase().includes('note:') &&
-            !ingredient.toLowerCase().includes('the complete') &&
-            !ingredient.toLowerCase().includes('ingredient')) {
+            !ingredient.toLowerCase().includes('moisturizer') &&
+            !ingredient.toLowerCase().includes('complete')) {
           dashedIngredients.push(ingredient);
         }
       }
@@ -143,9 +147,9 @@ export async function findProductIngredients(productName: string): Promise<strin
     
     if (dashedIngredients.length >= 3) {
       ingredientLines = dashedIngredients;
-    }
-    
-    for (const pattern of patterns) {
+    } else if (ingredientLines.length < 3) {
+      // Попробуем альтернативные методы
+      for (const pattern of patterns) {
       const matches = rawResponse.match(pattern);
       if (matches && matches.length > 0) {
         for (const match of matches) {
