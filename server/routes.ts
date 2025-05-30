@@ -7,6 +7,7 @@ import { scoreProduct } from "./scoring";
 import { insertProductSchema, insertAnalysisSchema, updateSkinProfileSchema, loginSchema, registerSchema, smsLoginSchema, smsVerifySchema } from "@shared/schema";
 import { sendSMSCode, generateSMSCode } from "./smsService";
 import { createClient } from '@supabase/supabase-js';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -769,7 +770,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const base64Image = imageData.replace(/^data:image\/[a-z]+;base64,/, '');
       
-      const { GoogleGenerativeAI } = require('@google/generative-ai');
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
@@ -844,7 +844,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const base64Image = imageData.replace(/^data:image\/[a-z]+;base64,/, '');
       console.log("Base64 image length after cleanup:", base64Image.length);
       
-      const { GoogleGenerativeAI } = require('@google/generative-ai');
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
