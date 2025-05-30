@@ -6,6 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -16,6 +18,8 @@ interface SkinProfileModalProps {
 
 export default function SkinProfileModal({ isOpen, onClose }: SkinProfileModalProps) {
   const [currentStep, setCurrentStep] = useState(1);
+  const [gender, setGender] = useState("");
+  const [age, setAge] = useState(25);
   const [skinType, setSkinType] = useState("");
   const [skinConcerns, setSkinConcerns] = useState<string[]>([]);
   const [allergies, setAllergies] = useState<string[]>([]);
@@ -68,7 +72,7 @@ export default function SkinProfileModal({ isOpen, onClose }: SkinProfileModalPr
     "Без ароматизаторов", "Без парабенов", "Без сульфатов"
   ];
 
-  const totalSteps = 4;
+  const totalSteps = 6;
   const progress = (currentStep / totalSteps) * 100;
 
   const handleNext = () => {
@@ -77,6 +81,8 @@ export default function SkinProfileModal({ isOpen, onClose }: SkinProfileModalPr
     } else {
       // Submit profile
       updateProfileMutation.mutate({
+        gender,
+        age,
         skinType,
         skinConcerns,
         allergies,
@@ -93,10 +99,12 @@ export default function SkinProfileModal({ isOpen, onClose }: SkinProfileModalPr
 
   const canProceed = () => {
     switch (currentStep) {
-      case 1: return skinType !== "";
-      case 2: return true; // Concerns are optional
-      case 3: return true; // Allergies are optional
-      case 4: return true; // Preferences are optional
+      case 1: return gender !== "";
+      case 2: return age >= 13 && age <= 100;
+      case 3: return skinType !== "";
+      case 4: return true; // Concerns are optional
+      case 5: return true; // Allergies are optional
+      case 6: return true; // Preferences are optional
       default: return false;
     }
   };
@@ -126,6 +134,53 @@ export default function SkinProfileModal({ isOpen, onClose }: SkinProfileModalPr
           {/* Step Content */}
           <div className="space-y-4">
             {currentStep === 1 && (
+              <>
+                <div>
+                  <h4 className="font-semibold mb-2">Укажите ваш пол</h4>
+                  <p className="text-sm text-gray-600 mb-4">Это поможет нам предложить подходящие продукты</p>
+                </div>
+                
+                <RadioGroup value={gender} onValueChange={setGender} className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="female" id="female" />
+                    <Label htmlFor="female" className="cursor-pointer">Женский</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="male" id="male" />
+                    <Label htmlFor="male" className="cursor-pointer">Мужской</Label>
+                  </div>
+                </RadioGroup>
+              </>
+            )}
+
+            {currentStep === 2 && (
+              <>
+                <div>
+                  <h4 className="font-semibold mb-2">Укажите ваш возраст</h4>
+                  <p className="text-sm text-gray-600 mb-4">Возраст важен для подбора подходящих средств ухода</p>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="text-center">
+                    <span className="text-2xl font-bold text-blue-600">{age} лет</span>
+                  </div>
+                  <Slider
+                    value={[age]}
+                    onValueChange={(value) => setAge(value[0])}
+                    max={80}
+                    min={13}
+                    step={1}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>13 лет</span>
+                    <span>80 лет</span>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {currentStep === 3 && (
               <>
                 <div>
                   <h4 className="font-semibold mb-2">Какой у вас тип кожи?</h4>
