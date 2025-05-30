@@ -770,6 +770,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const base64Image = imageData.replace(/^data:image\/[a-z]+;base64,/, '');
       
+      if (!process.env.GEMINI_API_KEY) {
+        throw new Error("GEMINI_API_KEY не настроен");
+      }
+      
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
@@ -843,6 +847,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract text using Gemini Vision API
       const base64Image = imageData.replace(/^data:image\/[a-z]+;base64,/, '');
       console.log("Base64 image length after cleanup:", base64Image.length);
+      
+      if (!process.env.GEMINI_API_KEY) {
+        throw new Error("GEMINI_API_KEY не настроен");
+      }
       
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
