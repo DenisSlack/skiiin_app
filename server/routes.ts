@@ -117,11 +117,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Неверный логин или пароль" });
       }
 
-      // Create session
+      // Create session with explicit save
       (req.session as any).userId = user.id;
       (req.session as any).username = user.username;
-
-      res.json({ user, message: "Вход выполнен успешно" });
+      
+      // Force session save and also provide a temporary token
+      req.session.save((err: any) => {
+        if (err) {
+          console.error("Session save error:", err);
+        }
+        console.log("Session saved. User ID:", user.id);
+        
+        // Temporary solution: provide a simple token
+        const tempToken = Buffer.from(`${user.id}:${Date.now()}`).toString('base64');
+        res.json({ 
+          user, 
+          message: "Вход выполнен успешно",
+          token: tempToken // Temporary token for client-side auth
+        });
+      });
     } catch (error) {
       console.error("Error logging in:", error);
       res.status(500).json({ message: "Ошибка входа" });
@@ -289,8 +303,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Auth check - Session:", req.session?.userId);
       console.log("Auth check - Replit:", req.user?.claims?.sub);
+      console.log("Auth check - Token:", req.headers.authorization);
       
-      // First check if user is authenticated via Replit
+      // Check for temporary token in Authorization header
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        try {
+          const decoded = Buffer.from(token, 'base64').toString();
+          const [userId] = decoded.split(':');
+          if (userId) {
+            const user = await storage.getUser(userId);
+            if (user) {
+              return res.json(user);
+            }
+          }
+        } catch (tokenError) {
+          console.log("Invalid token format");
+        }
+      }
+      
+      // Check if user is authenticated via Replit
       if (req.isAuthenticated && req.isAuthenticated() && req.user?.claims?.sub) {
         const userId = req.user.claims.sub;
         const user = await storage.getUser(userId);
@@ -299,7 +332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Then check session-based auth
+      // Check session-based auth
       if (req.session?.userId) {
         console.log("Searching for user with ID:", req.session.userId);
         const user = await storage.getUser(req.session.userId);
