@@ -84,53 +84,16 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
       console.log("Setting isProcessing to true");
       setIsProcessing(true);
 
-      // Try OCR with Vision API
+      // Prompt for manual input after photo is taken
       let text = extractedText;
       if (!text && capturedImage) {
-        console.log("Attempting OCR extraction...");
-        console.log("capturedImage exists:", !!capturedImage);
-        console.log("capturedImage length:", capturedImage?.length);
-        try {
-          console.log("Sending OCR request...");
-          const ocrResponse = await fetch('/api/extract-text', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ imageData: capturedImage })
-          });
-          console.log("OCR response status:", ocrResponse.status);
-          
-          if (ocrResponse.ok) {
-            const ocrData = await ocrResponse.json();
-            if (ocrData.text && ocrData.text !== "NO_INGREDIENTS_FOUND" && ocrData.text !== "MANUAL_INPUT_REQUIRED" && ocrData.text.trim()) {
-              text = ocrData.text;
-              setExtractedText(text);
-              console.log("OCR successful, text length:", text.length);
-              toast({
-                title: "Текст распознан!",
-                description: "Проверьте и отредактируйте если нужно",
-              });
-            } else {
-              console.log("OCR requires manual input");
-              toast({
-                title: "Введите состав вручную",
-                description: "Посмотрите на фото и введите ингредиенты в поле ниже",
-              });
-              setIsProcessing(false);
-              return;
-            }
-          } else {
-            throw new Error('OCR request failed');
-          }
-        } catch (ocrError) {
-          console.error("Gemini OCR failed:", ocrError);
-          toast({
-            title: "Введите состав вручную",
-            description: "Автоматическое распознавание не удалось",
-            variant: "destructive",
-          });
-          setIsProcessing(false);
-          return;
-        }
+        console.log("Photo captured, requesting manual input");
+        toast({
+          title: "Введите состав",
+          description: "Посмотрите на фото и введите ингредиенты в поле ниже",
+        });
+        setIsProcessing(false);
+        return;
       }
 
       if (!text.trim()) {
