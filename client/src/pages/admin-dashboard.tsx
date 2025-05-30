@@ -186,7 +186,7 @@ export default function AdminDashboard() {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Пользователи</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {adminData?.userCount || 0}
+                    {(adminData as any)?.userCount || 0}
                   </p>
                 </div>
               </div>
@@ -200,7 +200,7 @@ export default function AdminDashboard() {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Продукты</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {adminData?.productCount || 0}
+                    {(adminData as any)?.productCount || 0}
                   </p>
                 </div>
               </div>
@@ -214,7 +214,7 @@ export default function AdminDashboard() {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Анализы</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {adminData?.analysisCount || 0}
+                    {(adminData as any)?.analysisCount || 0}
                   </p>
                 </div>
               </div>
@@ -228,7 +228,7 @@ export default function AdminDashboard() {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Таблицы</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {tables?.length || 0}
+                    {(tables as any)?.length || 0}
                   </p>
                 </div>
               </div>
