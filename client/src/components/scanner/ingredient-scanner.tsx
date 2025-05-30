@@ -198,66 +198,59 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
     try {
       setIsProcessing(true);
       
-      const headers: any = { 'Content-Type': 'application/json' };
-
+      console.log("Searching for product:", productName.trim());
+      
       const response = await fetch('/api/products/find-ingredients', {
         method: 'POST',
-        headers,
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ productName: productName.trim() })
       });
 
+      console.log("Response status:", response.status);
+
       if (!response.ok) {
-        throw new Error('Failed to find ingredients');
+        const errorText = await response.text();
+        console.error("Server error:", errorText);
+        throw new Error(`Server returned ${response.status}`);
       }
 
       const data = await response.json();
+      console.log("Server response:", data);
       
-      console.log("API response:", data);
-      
-      // Check if we have valid ingredients data
-      if (!data.ingredients || typeof data.ingredients !== 'string' || data.ingredients.trim().length === 0) {
-        console.log("No ingredients found in response:", data);
+      // Check if we have ingredients
+      if (!data.ingredients || data.ingredients.trim().length === 0) {
         toast({
           title: "Состав не найден",
-          description: data.message || "Не удалось найти состав продукта. Попробуйте ввести его вручную.",
+          description: "Не удалось найти состав продукта. Попробуйте ввести его вручную.",
           variant: "destructive",
         });
         return;
       }
       
-      // Show success message
+      // Success - show found ingredients
       toast({
         title: "Состав найден!",
-        description: "Обрабатываем найденный состав продукта...",
+        description: `Найдено ${data.ingredients.split(',').length} ингредиентов`,
       });
 
-      // Extract ingredients from the found text
-      const extractResponse = await fetch('/api/extract-ingredients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ text: data.ingredients })
-      });
+      // Split ingredients and clean them up
+      const ingredientsList = data.ingredients.split(',').map((ingredient: string) => ingredient.trim());
       
-      if (extractResponse.ok) {
-        const extractData = await extractResponse.json();
-        onResult?.(data.ingredients, extractData.ingredients, undefined, productName.trim());
-      } else {
-        // If extraction fails, still pass the raw ingredients
-        onResult?.(data.ingredients, data.ingredients.split(',').map(i => i.trim()), undefined, productName.trim());
-      }
+      // Pass results back to parent component
+      onResult?.(data.ingredients, ingredientsList, undefined, productName.trim());
+      
     } catch (error) {
       console.error("Error searching product:", error);
       toast({
         title: "Ошибка поиска",
-        description: "Не удалось найти состав продукта. Попробуйте сканирование.",
+        description: "Не удалось выполнить поиск. Проверьте подключение.",
         variant: "destructive",
       });
     } finally {
       setIsProcessing(false);
     }
-  }, [productName, extractIngredientsMutation, onResult, toast]);
+  }, [productName, onResult, toast]);
 
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
