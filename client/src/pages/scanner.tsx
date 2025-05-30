@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import AppHeader from "@/components/layout/app-header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
-import IngredientScanner from "@/components/scanner/ingredient-scanner";
+import ImageUploadScanner from "@/components/scanner/image-upload-scanner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -165,7 +165,7 @@ export default function Scanner() {
           <CardContent className="p-6 space-y-4">
             {showCamera ? (
               <div className="space-y-4">
-                <IngredientScanner 
+                <ImageUploadScanner 
                   onClose={() => setShowCamera(false)}
                   onResult={handleScanResult}
                 />

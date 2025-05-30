@@ -390,6 +390,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Complete product image analysis endpoint
+  app.post("/api/analyze-product-image", isAuthenticated, async (req, res) => {
+    try {
+      console.log("Starting product image analysis...");
+      const { imageData } = req.body;
+      
+      if (!imageData) {
+        return res.status(400).json({ message: "Image data is required" });
+      }
+
+      const base64Image = imageData.replace(/^data:image\/[a-z]+;base64,/, '');
+      
+      const { GoogleGenerativeAI } = require('@google/generative-ai');
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+      const prompt = `
+        Analyze this cosmetic product image and extract:
+        1. Product name (if visible)
+        2. Complete ingredients list (INCI names)
+        
+        Return JSON format:
+        {
+          "productName": "exact product name from package",
+          "ingredients": "comma-separated list of ingredients exactly as written"
+        }
+        
+        If ingredients are not clearly visible, return "NO_INGREDIENTS_FOUND" for ingredients.
+        Focus on the ingredient list section of the package.
+      `;
+
+      const result = await model.generateContent([
+        prompt,
+        {
+          inlineData: {
+            data: base64Image,
+            mimeType: "image/jpeg"
+          }
+        }
+      ]);
+
+      const responseText = result.response.text();
+      console.log("Gemini analysis result:", responseText);
+      
+      try {
+        const parsed = JSON.parse(responseText);
+        res.json({
+          productName: parsed.productName || "Косметический продукт",
+          ingredients: parsed.ingredients || "NO_INGREDIENTS_FOUND"
+        });
+      } catch (parseError) {
+        // If JSON parsing fails, try to extract ingredients from raw text
+        const lines = responseText.split('\n').filter(line => line.trim());
+        const ingredientsLine = lines.find(line => 
+          line.toLowerCase().includes('ingredient') || 
+          line.includes('aqua') || 
+          line.includes('glycerin')
+        );
+        
+        res.json({
+          productName: "Косметический продукт",
+          ingredients: ingredientsLine || "NO_INGREDIENTS_FOUND"
+        });
+      }
+    } catch (error) {
+      console.error("Product image analysis error:", error);
+      res.status(500).json({ message: "Failed to analyze product image" });
+    }
+  });
+
   // Gemini Vision OCR text extraction endpoint
   app.post("/api/extract-text", isAuthenticated, async (req, res) => {
     try {
