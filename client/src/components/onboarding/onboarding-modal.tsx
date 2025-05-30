@@ -19,32 +19,32 @@ export default function OnboardingModal({ isOpen, onClose, onStartProfile }: Onb
             <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/60 rounded-full mx-auto flex items-center justify-center">
               <FlaskConical className="text-white text-2xl" />
             </div>
-            <h3 className="text-xl font-bold">Welcome to Skiiin IQ</h3>
-            <p className="text-gray-600 text-sm">Let's set up your skin profile to get personalized product recommendations</p>
+            <h3 className="text-xl font-bold">Добро пожаловать в Skiiin IQ</h3>
+            <p className="text-gray-600 text-sm">Настройте профиль кожи для получения персональных рекомендаций по продуктам</p>
           </div>
           
           <div className="space-y-4">
             <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
               <Camera className="text-primary" />
               <div>
-                <p className="text-sm font-medium">Scan Ingredients</p>
-                <p className="text-xs text-gray-600">Use your camera to analyze products</p>
+                <p className="text-sm font-medium">Сканирование состава</p>
+                <p className="text-xs text-gray-600">Используйте камеру для анализа продуктов</p>
               </div>
             </div>
             
             <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
               <UserCheck className="text-primary" />
               <div>
-                <p className="text-sm font-medium">Personalized Analysis</p>
-                <p className="text-xs text-gray-600">Get recommendations based on your skin type</p>
+                <p className="text-sm font-medium">Персональный анализ</p>
+                <p className="text-xs text-gray-600">Получайте рекомендации на основе вашего типа кожи</p>
               </div>
             </div>
             
             <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
               <Save className="text-primary" />
               <div>
-                <p className="text-sm font-medium">Build Your Library</p>
-                <p className="text-xs text-gray-600">Save and track your skincare products</p>
+                <p className="text-sm font-medium">Создайте библиотеку</p>
+                <p className="text-xs text-gray-600">Сохраняйте и отслеживайте ваши косметические продукты</p>
               </div>
             </div>
           </div>
@@ -55,13 +55,13 @@ export default function OnboardingModal({ isOpen, onClose, onStartProfile }: Onb
               className="flex-1"
               onClick={onClose}
             >
-              Skip for now
+              Пропустить
             </Button>
             <Button
               className="flex-1 app-gradient text-white font-medium"
               onClick={onStartProfile}
             >
-              Get Started
+              Начать
             </Button>
           </div>
         </CardContent>
