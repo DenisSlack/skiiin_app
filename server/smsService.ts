@@ -18,25 +18,33 @@ export async function sendSMSCode({ phone, code }: SendSMSParams): Promise<boole
 
     const message = `Ваш код для входа в Skiiin IQ: ${code}. Код действителен 10 минут.`;
     
-    const credentials = Buffer.from(`${process.env.SMSAERO_EMAIL}:${process.env.SMSAERO_API_KEY}`).toString('base64');
+    // Try different authentication method - using form data instead of basic auth
+    const formData = new URLSearchParams({
+      user: process.env.SMSAERO_EMAIL,
+      password: process.env.SMSAERO_API_KEY,
+      to: phone,
+      text: message,
+      from: 'SMS Aero'
+    });
     
     const response = await fetch('https://gate.smsaero.ru/v2/sms/send', {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${credentials}`,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: JSON.stringify({
-        number: phone,
-        text: message,
-        sign: 'SMS Aero',
-      }),
+      body: formData.toString(),
     });
 
     const result: SMSAeroResponse = await response.json();
     
+    console.log("SMS Aero response:", {
+      status: response.status,
+      ok: response.ok,
+      result
+    });
+    
     if (!response.ok || !result.success) {
-      console.error("SMS Aero API error:", result.message || "Unknown error");
+      console.error("SMS Aero API error:", result.message || result || "Unknown error");
       return false;
     }
 

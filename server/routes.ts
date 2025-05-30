@@ -129,6 +129,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Test SMS Aero connection
+  app.get('/api/auth/sms/test', async (req, res) => {
+    try {
+      if (!process.env.SMSAERO_API_KEY || !process.env.SMSAERO_EMAIL) {
+        return res.status(500).json({ 
+          message: "SMS Aero API credentials not configured",
+          hasApiKey: !!process.env.SMSAERO_API_KEY,
+          hasEmail: !!process.env.SMSAERO_EMAIL
+        });
+      }
+
+      const credentials = Buffer.from(`${process.env.SMSAERO_EMAIL}:${process.env.SMSAERO_API_KEY}`).toString('base64');
+      
+      // Test with balance check endpoint
+      const response = await fetch('https://gate.smsaero.ru/v2/balance', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${credentials}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+      
+      res.json({
+        status: response.status,
+        success: response.ok,
+        data: result,
+        credentials: `${process.env.SMSAERO_EMAIL}:***`
+      });
+    } catch (error: any) {
+      res.status(500).json({ 
+        message: "Error testing SMS Aero connection",
+        error: error.message 
+      });
+    }
+  });
+
   // SMS Authentication routes
   app.post('/api/auth/sms/send', async (req, res) => {
     try {
