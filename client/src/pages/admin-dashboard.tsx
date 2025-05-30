@@ -33,7 +33,7 @@ export default function AdminDashboard() {
     queryKey: ["/api/admin/stats"],
   });
 
-  const { data: tableData } = useQuery({
+  const { data: tableData, isLoading: tableLoading } = useQuery({
     queryKey: ["/api/admin/table", selectedTable, searchTerm],
     queryFn: async () => {
       const url = `/api/admin/table/${selectedTable}${searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : ''}`;
@@ -44,6 +44,9 @@ export default function AdminDashboard() {
       }
       const data = await response.json();
       console.log('Frontend: Received data:', data);
+      console.log('Frontend: Data type:', typeof data);
+      console.log('Frontend: Is array:', Array.isArray(data));
+      console.log('Frontend: Data length:', data?.length);
       return data;
     },
   });
@@ -223,60 +226,83 @@ export default function AdminDashboard() {
                       </Badge>
                     </div>
 
-                    {/* Table Content */}
-                    <div className="border rounded-lg overflow-hidden">
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              {tableData && Array.isArray(tableData) && tableData.length > 0 && Object.keys(tableData[0]).map((column) => (
-                                <th key={column} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  {column}
-                                </th>
-                              ))}
-                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Действия
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                            {tableData && Array.isArray(tableData) && tableData.map((record: any, index: number) => (
-                              <tr key={record.id || index}>
-                                {Object.entries(record).map(([key, value]) => (
-                                  <td key={key} className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <div className="max-w-xs truncate" title={String(value)}>
-                                      {formatValue(value)}
-                                    </div>
-                                  </td>
-                                ))}
-                                <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                  <div className="flex items-center justify-end space-x-2">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="text-blue-600 hover:text-blue-800"
-                                    >
-                                      <Edit className="w-4 h-4" />
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleDeleteRecord(record.id)}
-                                      className="text-red-600 hover:text-red-800"
-                                      disabled={deleteMutation.isPending}
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                    {/* Loading indicator */}
+                    {tableLoading && (
+                      <div className="text-center py-8">
+                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                        <p className="mt-2 text-gray-500">Загрузка данных...</p>
                       </div>
+                    )}
+
+                    {/* Debug info */}
+                    <div className="mb-4 p-2 bg-gray-100 rounded text-xs">
+                      <div>Loading: {tableLoading ? 'true' : 'false'}</div>
+                      <div>Table Data: {tableData ? 'exists' : 'null/undefined'}</div>
+                      <div>Is Array: {Array.isArray(tableData) ? 'true' : 'false'}</div>
+                      <div>Length: {tableData?.length || 0}</div>
                     </div>
 
-                    {(!tableData || !Array.isArray(tableData) || tableData.length === 0) && (
+                    {/* Table Content */}
+                    {!tableLoading && tableData && Array.isArray(tableData) && tableData.length > 0 && (
+                      <div className="border rounded-lg overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                {Object.keys(tableData[0]).map((column) => (
+                                  <th key={column} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    {column}
+                                  </th>
+                                ))}
+                                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Действия
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {tableData.map((record: any, index: number) => (
+                                <tr key={record.id || index}>
+                                  {Object.entries(record).map(([key, value]) => (
+                                    <td key={key} className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                      <div className="max-w-xs truncate" title={String(value)}>
+                                        {formatValue(value)}
+                                      </div>
+                                    </td>
+                                  ))}
+                                  <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <div className="flex items-center justify-end space-x-2">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-blue-600 hover:text-blue-800"
+                                        onClick={() => console.log('Edit clicked for:', record.id)}
+                                      >
+                                        <Edit className="w-4 h-4" />
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          console.log('Delete clicked for:', record.id);
+                                          handleDeleteRecord(record.id);
+                                        }}
+                                        className="text-red-600 hover:text-red-800"
+                                        disabled={deleteMutation.isPending}
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Empty state */}
+                    {!tableLoading && (!tableData || !Array.isArray(tableData) || tableData.length === 0) && (
                       <div className="text-center py-8 text-gray-500">
                         {selectedTable === "users" && "Пользователи не найдены"}
                         {selectedTable === "products" && "Продукты не найдены"}
