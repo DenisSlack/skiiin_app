@@ -3,6 +3,7 @@ import {
   products,
   analyses,
   ingredients,
+  smsCodes,
   type User,
   type UpsertUser,
   type Product,
@@ -14,6 +15,8 @@ import {
   type UpdateSkinProfile,
   type LoginCredentials,
   type RegisterData,
+  type InsertSmsCode,
+  type SmsCode,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
@@ -24,7 +27,9 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByPhone(phone: string): Promise<User | undefined>;
   createUser(userData: RegisterData): Promise<User>;
+  createUserWithPhone(phone: string): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateSkinProfile(userId: string, profile: UpdateSkinProfile): Promise<User>;
   
@@ -43,6 +48,12 @@ export interface IStorage {
   getIngredient(name: string): Promise<Ingredient | undefined>;
   createIngredient(ingredient: InsertIngredient): Promise<Ingredient>;
   searchIngredients(query: string): Promise<Ingredient[]>;
+  
+  // SMS code operations
+  createSmsCode(smsCode: InsertSmsCode): Promise<SmsCode>;
+  getValidSmsCode(phone: string, code: string): Promise<SmsCode | undefined>;
+  markSmsCodeAsVerified(id: number): Promise<void>;
+  cleanupExpiredSmsCodes(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -64,6 +75,11 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUserByPhone(phone: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, phone));
+    return user;
+  }
+
   async createUser(userData: RegisterData): Promise<User> {
     const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2)}`;
     const [user] = await db
@@ -75,6 +91,24 @@ export class DatabaseStorage implements IStorage {
         email: userData.email || null,
         firstName: userData.firstName || null,
         lastName: userData.lastName || null,
+        profileImageUrl: null,
+      })
+      .returning();
+    return user;
+  }
+
+  async createUserWithPhone(phone: string): Promise<User> {
+    const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2)}`;
+    const username = `phone_${phone.replace(/\D/g, '')}`;
+    const [user] = await db
+      .insert(users)
+      .values({
+        id: userId,
+        username: username,
+        password: phone, // Use phone as temporary password
+        email: phone, // Store phone in email field for now
+        firstName: null,
+        lastName: null,
         profileImageUrl: null,
       })
       .returning();

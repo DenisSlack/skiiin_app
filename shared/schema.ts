@@ -81,7 +81,15 @@ export const ingredients = pgTable("ingredients", {
   description: text("description"),
 });
 
-// Removed email codes - using simple login/password auth
+// SMS verification codes table
+export const smsCodes = pgTable("sms_codes", {
+  id: serial("id").primaryKey(),
+  phone: varchar("phone", { length: 20 }).notNull(),
+  code: varchar("code", { length: 6 }).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  verified: boolean("verified").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
@@ -148,6 +156,20 @@ export const registerSchema = z.object({
   lastName: z.string().optional(),
 });
 
+export const smsLoginSchema = z.object({
+  phone: z.string().min(10, "Введите корректный номер телефона"),
+});
+
+export const smsVerifySchema = z.object({
+  phone: z.string().min(10, "Введите корректный номер телефона"),
+  code: z.string().length(6, "Код должен содержать 6 цифр"),
+});
+
+export const insertSmsCodeSchema = createInsertSchema(smsCodes).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -160,3 +182,7 @@ export type Ingredient = typeof ingredients.$inferSelect;
 export type UpdateSkinProfile = z.infer<typeof updateSkinProfileSchema>;
 export type LoginCredentials = z.infer<typeof loginSchema>;
 export type RegisterData = z.infer<typeof registerSchema>;
+export type SmsLogin = z.infer<typeof smsLoginSchema>;
+export type SmsVerify = z.infer<typeof smsVerifySchema>;
+export type InsertSmsCode = z.infer<typeof insertSmsCodeSchema>;
+export type SmsCode = typeof smsCodes.$inferSelect;
