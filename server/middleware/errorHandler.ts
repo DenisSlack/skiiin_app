@@ -6,6 +6,9 @@ import { metrics } from '../lib/metrics';
 import logger from '../logger';
 
 export const errorHandler = async (error: Error, req: Request, res: Response, next: NextFunction) => {
+  // Явный вывод ошибки в консоль
+  console.error('!!! ERROR HANDLER:', error, error.stack);
+
   // Логируем все ошибки
   logger.error('Error occurred:', {
     error: error.message,

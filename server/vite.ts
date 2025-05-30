@@ -11,8 +11,6 @@ import logger from './logger';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const viteLogger = createLogger();
-
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -28,19 +26,12 @@ export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
     middlewareMode: true,
     hmr: { server },
-    allowedHosts: true,
+    allowedHosts: undefined,
   };
 
   const vite = await createViteServer({
     ...viteConfig,
     configFile: false,
-    customLogger: {
-      ...viteLogger,
-      error: (msg, options) => {
-        viteLogger.error(msg, options);
-        process.exit(1);
-      },
-    },
     server: serverOptions,
     appType: "custom",
   });
@@ -69,7 +60,7 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = resolve(__dirname, "../dist/client");
+  const distPath = resolve(__dirname, "../dist/public");
   app.use(express.static(distPath, { index: false }));
 
   app.use("*", async (req, res, next) => {
@@ -78,12 +69,8 @@ export function serveStatic(app: Express) {
         resolve(distPath, "index.html"),
         "utf-8"
       );
-
-      const { render } = await import("../dist/server/entry-server.js");
-      const appHtml = await render(req.originalUrl);
-      const html = template.replace(`<!--app-html-->`, appHtml);
-
-      res.status(200).set({ "Content-Type": "text/html" }).end(html);
+      // SSR отключён в production, просто отдаём index.html
+      res.status(200).set({ "Content-Type": "text/html" }).end(template);
     } catch (e: any) {
       logger.error('Error serving static files:', e);
       next(e);

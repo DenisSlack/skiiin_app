@@ -28,56 +28,25 @@ export class NotificationService {
     return NotificationService.instance;
   }
 
-  // Отправка email
+  // Заглушка вместо отправки email
   async sendEmail(to: string, subject: string, html: string): Promise<void> {
-    try {
-      await transporter.sendMail({
-        from: process.env.SMTP_USER,
-        to,
-        subject,
-        html,
-      });
-      logger.info('Email sent successfully', { to, subject });
-    } catch (error) {
-      logger.error('Failed to send email:', { to, subject, error });
-      throw error;
-    }
+    // Email отключён
+    return;
   }
 
   // Отправка уведомления о новом анализе
   async sendAnalysisNotification(userEmail: string, analysisId: string, productName: string): Promise<void> {
-    const subject = 'Новый анализ продукта';
-    const html = `
-      <h1>Анализ продукта завершен</h1>
-      <p>Здравствуйте!</p>
-      <p>Анализ продукта "${productName}" успешно завершен.</p>
-      <p>Вы можете просмотреть результаты по ссылке: <a href="${process.env.APP_URL}/analysis/${analysisId}">Перейти к результатам</a></p>
-    `;
-    await this.sendEmail(userEmail, subject, html);
+    return;
   }
 
   // Отправка уведомления о проблемах с API
   async sendApiErrorNotification(error: Error, route: string): Promise<void> {
-    const subject = 'Ошибка API';
-    const html = `
-      <h1>Обнаружена ошибка в API</h1>
-      <p>Маршрут: ${route}</p>
-      <p>Ошибка: ${error.message}</p>
-      <p>Стек: ${error.stack}</p>
-    `;
-    await this.sendEmail(process.env.ADMIN_EMAIL!, subject, html);
+    return;
   }
 
   // Отправка уведомления о подозрительной активности
   async sendSecurityAlertNotification(ip: string, action: string, details: string): Promise<void> {
-    const subject = 'Предупреждение безопасности';
-    const html = `
-      <h1>Обнаружена подозрительная активность</h1>
-      <p>IP: ${ip}</p>
-      <p>Действие: ${action}</p>
-      <p>Детали: ${details}</p>
-    `;
-    await this.sendEmail(process.env.ADMIN_EMAIL!, subject, html);
+    return;
   }
 }
 

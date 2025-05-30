@@ -3,13 +3,9 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic } from "./vite";
 import rateLimit from 'express-rate-limit';
-import morgan from 'morgan';
-import logger, { stream } from './logger';
-import { errorHandler } from './middleware/errorHandler';
 import cors from 'cors';
 import helmet from 'helmet';
-import { metricsMiddleware } from './lib/metrics';
-import csurf from 'csurf';
+import cookieParser from 'cookie-parser';
 // OpenAPI документация временно отключена
 
 const app = express();
@@ -124,40 +120,16 @@ app.use((req, res, next) => {
 });
 
 // Метрики
-app.get('/metrics', metricsMiddleware);
+app.use(metricsMiddleware as any);
 
 // CSRF middleware (cookie-based)
+app.use(cookieParser());
 app.use(csurf({ cookie: true }));
 
 // Эндпоинт для получения CSRF-токена
 app.get('/api/csrf-token', (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
 });
-
-// --- Swagger/OpenAPI ---
-const registry = new OpenAPIRegistry();
-registry.register('LoginInput', loginSchema);
-registry.register('RegisterInput', registerSchema);
-registry.register('ProductInput', productSchema);
-registry.register('ProductUpdateInput', productUpdateSchema);
-registry.register('ProductQueryInput', productQuerySchema);
-registry.register('ScanInput', scanSchema);
-registry.register('IngredientsInput', ingredientsSchema);
-// Зарегистрируйте другие схемы по аналогии
-
-const generator = new OpenApiGeneratorV3(registry.definitions);
-const openApiDoc = generator.generateDocument({
-  openapi: '3.0.0',
-  info: {
-    title: 'Cosmetic API',
-    version: '1.0.0',
-    description: 'Документация API для сервиса анализа косметики',
-  },
-  servers: [{ url: '/api' }],
-});
-
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openApiDoc));
-// --- Swagger/OpenAPI ---
 
 (async () => {
   const server = await registerRoutes(app);
