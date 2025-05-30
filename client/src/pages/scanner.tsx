@@ -242,13 +242,72 @@ export default function Scanner() {
                     Название продукта *
                   </Label>
                 </div>
-                <Input
-                  id="productName"
-                  placeholder="Например: La Roche-Posay Effaclar Duo"
-                  value={productName}
-                  onChange={(e) => setProductName(e.target.value)}
-                  className="border-gray-300 focus:border-primary focus:ring-primary/20"
-                />
+                <div className="flex space-x-2">
+                  <Input
+                    id="productName"
+                    placeholder="Например: La Roche-Posay Effaclar Duo"
+                    value={productName}
+                    onChange={(e) => setProductName(e.target.value)}
+                    className="border-gray-300 focus:border-primary focus:ring-primary/20 flex-1"
+                  />
+                  <Button
+                    type="button"
+                    onClick={async () => {
+                      if (!productName.trim()) {
+                        toast({
+                          title: "Ошибка",
+                          description: "Введите название продукта",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      
+                      try {
+                        console.log("Testing ingredient search for:", productName);
+                        const response = await fetch('/api/products/find-ingredients', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          credentials: 'include',
+                          body: JSON.stringify({ productName: productName.trim() })
+                        });
+                        
+                        console.log("Response status:", response.status);
+                        
+                        if (!response.ok) {
+                          throw new Error(`Server error: ${response.status}`);
+                        }
+                        
+                        const data = await response.json();
+                        console.log("Response data:", data);
+                        
+                        if (data.ingredients) {
+                          setIngredients(data.ingredients);
+                          toast({
+                            title: "Состав найден!",
+                            description: `Найдено ${data.ingredients.split(',').length} ингредиентов`,
+                          });
+                        } else {
+                          toast({
+                            title: "Состав не найден",
+                            description: "Попробуйте другое название продукта",
+                            variant: "destructive",
+                          });
+                        }
+                      } catch (error) {
+                        console.error("Error:", error);
+                        toast({
+                          title: "Ошибка поиска",
+                          description: "Проверьте подключение к интернету",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    disabled={!productName.trim()}
+                    className="px-4 py-2 bg-primary text-white"
+                  >
+                    Найти состав
+                  </Button>
+                </div>
               </div>
 
               {/* Ingredients Field */}
