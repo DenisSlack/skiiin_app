@@ -103,42 +103,49 @@ export async function findProductIngredients(productName: string): Promise<strin
     console.log(`Raw response for ${productName}:`, rawResponse);
     
     // Извлекаем список ингредиентов из ответа
-    let ingredients = rawResponse;
+    let ingredients = "";
     
-    // Пытаемся найти ингредиенты разными способами
+    // Улучшенная логика извлечения ингредиентов
     let ingredientLines: string[] = [];
-    const lines = rawResponse.split('\n');
     
-    // Способ 1: Строки с дефисами
-    for (const line of lines) {
-      if (line.match(/^\s*-\s*[A-Za-z][A-Za-z\s\/\(\)]+$/)) {
-        const clean = line.replace(/^\s*-\s*/, '').trim();
-        if (clean.length > 2 && !clean.toLowerCase().includes('here is') && !clean.toLowerCase().includes('you would')) {
-          ingredientLines.push(clean);
-        }
-      }
-    }
+    // Паттерны для поиска списков ингредиентов
+    const patterns = [
+      // Список после двоеточия
+      /:\s*([A-Za-z][^.]*?)(?:\.|$)/g,
+      // Список в кавычках
+      /"([^"]+)"/g,
+      // Список ингредиентов через запятую (минимум 3 компонента)
+      /([A-Za-z\/\(\)\-\s]+(?:,\s*[A-Za-z\/\(\)\-\s]+){2,})/g,
+    ];
     
-    // Способ 2: Если не нашли достаточно через дефисы, ищем списки через запятые
-    if (ingredientLines.length < 5) {
-      // Ищем все возможные списки ингредиентов через запятые
-      const patterns = [
-        /([A-Z][A-Za-z\s\/\(\)]+(?:,\s*[A-Z][A-Za-z\s\/\(\)]+){4,})/g,
-        /([A-Za-z][A-Za-z\s\/\(\)]+(?:,\s*[A-Za-z][A-Za-z\s\/\(\)]+){4,})/g
-      ];
-      
-      for (const pattern of patterns) {
-        const matches = rawResponse.match(pattern);
-        if (matches && matches.length > 0) {
-          const longestMatch = matches.reduce((longest: string, current: string) => 
-            current.length > longest.length ? current : longest, ""
-          );
+    for (const pattern of patterns) {
+      const matches = rawResponse.match(pattern);
+      if (matches && matches.length > 0) {
+        for (const match of matches) {
+          // Очищаем захваченный текст
+          let cleanMatch = match.replace(/^[:\s"]+|["\s.]+$/g, '').trim();
           
-          if (longestMatch) {
-            ingredientLines = longestMatch.split(',').map(ing => ing.trim());
-            break;
+          // Проверяем, что это похоже на список ингредиентов
+          if (cleanMatch.includes(',') && cleanMatch.length > 20) {
+            const parts = cleanMatch.split(',').map(part => part.trim());
+            
+            // Фильтруем валидные ингредиенты
+            const validIngredients = parts.filter(part => {
+              return part.length > 1 && 
+                     part.match(/^[A-Za-z]/) && 
+                     !part.toLowerCase().includes('here is') &&
+                     !part.toLowerCase().includes('you would') &&
+                     !part.toLowerCase().includes('the complete') &&
+                     !part.toLowerCase().includes('ingredients list');
+            });
+            
+            if (validIngredients.length >= 3) {
+              ingredientLines = validIngredients;
+              break;
+            }
           }
         }
+        if (ingredientLines.length >= 3) break;
       }
     }
     
