@@ -1,4 +1,11 @@
 import { supabase, handleSupabaseError } from './supabase';
+import {
+  mapUserToSupabase,
+  mapProductToSupabase,
+  mapAnalysisToSupabase,
+  mapSmsCodeToSupabase,
+  mapIngredientToSupabase
+} from './fieldMapper';
 import type {
   User,
   UpsertUser,
