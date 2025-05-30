@@ -219,14 +219,21 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
 
       const data = await response.json();
       
-      if (data.suggestScanning || !data.ingredients) {
+      // Check if we have valid ingredients data
+      if (!data.ingredients || data.ingredients.trim().length === 0) {
         toast({
           title: "Состав не найден",
-          description: data.message || "Попробуйте отсканировать ингредиенты с упаковки",
+          description: data.message || "Не удалось найти состав продукта. Попробуйте ввести его вручную.",
           variant: "destructive",
         });
         return;
       }
+      
+      // Show success message
+      toast({
+        title: "Состав найден!",
+        description: "Обрабатываем найденный состав продукта...",
+      });
 
       const result = await extractIngredientsMutation.mutateAsync(data.ingredients);
       onResult?.(data.ingredients, result.ingredients, undefined, productName.trim());
