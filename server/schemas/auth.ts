@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 export const loginSchema = z.object({
-  email: z.string().email('Некорректный email').trim().describe('Email пользователя'),
-  password: z.string().min(8, 'Пароль должен содержать минимум 8 символов').describe('Пароль пользователя'),
+  username: z.string().min(1, 'Логин или email обязателен').trim().describe('Логин или email пользователя'),
+  password: z.string().min(1, 'Пароль обязателен').describe('Пароль пользователя'),
 }).describe('Схема входа пользователя');
 
 export const registerSchema = z.object({

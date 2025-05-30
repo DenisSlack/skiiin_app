@@ -8,8 +8,15 @@ const router = Router();
 // User login
 router.post('/api/auth/login', validate(loginSchema), async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const user = await storage.getUserByEmail(email);
+    const { username, password } = req.body;
+    // Проверяем, является ли username email-адресом
+    let user;
+    if (username.includes('@')) {
+      user = await storage.getUserByEmail(username);
+    } else {
+      user = await storage.getUserByUsername(username);
+    }
+    
     if (!user || user.password !== password) {
       return res.status(401).json({ message: 'Неверные учетные данные' });
     }
