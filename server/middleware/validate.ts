@@ -8,11 +8,7 @@ export const validate = (schema: AnyZodObject) => async (
   next: NextFunction
 ) => {
   try {
-    await schema.parseAsync({
-      body: req.body,
-      query: req.query,
-      params: req.params,
-    });
+    await schema.parseAsync(req.body);
     return next();
   } catch (error) {
     if (error instanceof ZodError) {
