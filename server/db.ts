@@ -8,7 +8,7 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Configure postgres client for Supabase direct connection
+// Configure postgres client
 const client = postgres(process.env.DATABASE_URL, {
   prepare: false,
   max: 10,
