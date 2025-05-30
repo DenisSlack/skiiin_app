@@ -38,7 +38,13 @@ export default function AdminDashboard() {
     queryFn: async () => {
       const url = `/api/admin/table/${selectedTable}${searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : ''}`;
       console.log('Frontend: Making request to:', url);
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -49,6 +55,8 @@ export default function AdminDashboard() {
       console.log('Frontend: Data length:', data?.length);
       return data;
     },
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const { data: tables } = useQuery({
