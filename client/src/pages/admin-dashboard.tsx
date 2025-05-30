@@ -62,7 +62,9 @@ export default function AdminDashboard() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/table", selectedTable] });
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/table", selectedTable, searchTerm] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       toast({ title: "Запись удалена успешно" });
     },
     onError: () => {
@@ -227,7 +229,7 @@ export default function AdminDashboard() {
                         <table className="w-full">
                           <thead className="bg-gray-50">
                             <tr>
-                              {tableData && tableData.length > 0 && Object.keys(tableData[0]).map((column) => (
+                              {tableData && Array.isArray(tableData) && tableData.length > 0 && Object.keys(tableData[0]).map((column) => (
                                 <th key={column} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                   {column}
                                 </th>
@@ -238,7 +240,7 @@ export default function AdminDashboard() {
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
-                            {tableData?.map((record: any, index: number) => (
+                            {tableData && Array.isArray(tableData) && tableData.map((record: any, index: number) => (
                               <tr key={record.id || index}>
                                 {Object.entries(record).map(([key, value]) => (
                                   <td key={key} className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -261,6 +263,7 @@ export default function AdminDashboard() {
                                       size="sm"
                                       onClick={() => handleDeleteRecord(record.id)}
                                       className="text-red-600 hover:text-red-800"
+                                      disabled={deleteMutation.isPending}
                                     >
                                       <Trash2 className="w-4 h-4" />
                                     </Button>
@@ -273,9 +276,13 @@ export default function AdminDashboard() {
                       </div>
                     </div>
 
-                    {!tableData || tableData.length === 0 && (
+                    {(!tableData || !Array.isArray(tableData) || tableData.length === 0) && (
                       <div className="text-center py-8 text-gray-500">
-                        Нет данных для отображения
+                        {selectedTable === "users" && "Пользователи не найдены"}
+                        {selectedTable === "products" && "Продукты не найдены"}
+                        {selectedTable === "analyses" && "Анализы не найдены"}
+                        {selectedTable === "ingredients" && "Ингредиенты не найдены"}
+                        {selectedTable === "sms_codes" && "SMS коды не найдены"}
                       </div>
                     )}
                   </div>
