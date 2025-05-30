@@ -79,6 +79,16 @@ export const ingredients = pgTable("ingredients", {
   description: text("description"),
 });
 
+// Email verification codes table
+export const emailCodes = pgTable("email_codes", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 255 }).notNull(),
+  code: varchar("code", { length: 6 }).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  verified: boolean("verified").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   products: many(products),
@@ -124,6 +134,11 @@ export const insertIngredientSchema = createInsertSchema(ingredients).omit({
   id: true,
 });
 
+export const insertEmailCodeSchema = createInsertSchema(emailCodes).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const updateSkinProfileSchema = z.object({
   skinType: z.enum(["oily", "dry", "combination", "sensitive", "normal"]).optional(),
   skinConcerns: z.array(z.string()).optional(),
@@ -140,4 +155,6 @@ export type InsertAnalysis = z.infer<typeof insertAnalysisSchema>;
 export type Analysis = typeof analyses.$inferSelect;
 export type InsertIngredient = z.infer<typeof insertIngredientSchema>;
 export type Ingredient = typeof ingredients.$inferSelect;
+export type InsertEmailCode = z.infer<typeof insertEmailCodeSchema>;
+export type EmailCode = typeof emailCodes.$inferSelect;
 export type UpdateSkinProfile = z.infer<typeof updateSkinProfileSchema>;

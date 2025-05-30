@@ -3,6 +3,7 @@ import {
   products,
   analyses,
   ingredients,
+  emailCodes,
   type User,
   type UpsertUser,
   type Product,
@@ -11,6 +12,8 @@ import {
   type InsertAnalysis,
   type Ingredient,
   type InsertIngredient,
+  type InsertEmailCode,
+  type EmailCode,
   type UpdateSkinProfile,
 } from "@shared/schema";
 import { db } from "./db";
@@ -39,6 +42,12 @@ export interface IStorage {
   getIngredient(name: string): Promise<Ingredient | undefined>;
   createIngredient(ingredient: InsertIngredient): Promise<Ingredient>;
   searchIngredients(query: string): Promise<Ingredient[]>;
+  
+  // Email code operations
+  createEmailCode(emailCode: InsertEmailCode): Promise<EmailCode>;
+  getValidEmailCode(email: string, code: string): Promise<EmailCode | undefined>;
+  markEmailCodeAsVerified(id: number): Promise<void>;
+  cleanupExpiredCodes(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
