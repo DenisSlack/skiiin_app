@@ -57,7 +57,8 @@ export const products = pgTable("products", {
   category: varchar("category"), // moisturizer, serum, cleanser, etc.
   ingredients: jsonb("ingredients").notNull(), // array of ingredient objects
   imageUrl: text("image_url"),
-  scannedAt: timestamp("scanned_at").defaultNow(),
+  imageData: text("image_data"), // base64 encoded image data
+  createdAt: timestamp("created_at").defaultNow(),
   compatibilityScore: real("compatibility_score"), // 0-100
   compatibilityRating: varchar("compatibility_rating"), // excellent, good, caution, avoid
 });
@@ -65,11 +66,9 @@ export const products = pgTable("products", {
 export const analyses = pgTable("analyses", {
   id: serial("id").primaryKey(),
   productId: integer("product_id").notNull().references(() => products.id),
-  userId: varchar("user_id").notNull().references(() => users.id),
-  insights: jsonb("insights").notNull(), // AI-generated insights
-  recommendations: jsonb("recommendations"), // AI recommendations
-  ingredientBreakdown: jsonb("ingredient_breakdown").notNull(), // detailed ingredient analysis
-  scoring: jsonb("scoring"), // product scoring data
+  compatibilityScore: integer("compatibility_score").notNull(),
+  compatibilityRating: varchar("compatibility_rating").notNull(),
+  analysisData: jsonb("analysis_data").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -127,7 +126,7 @@ export const insertUserSchema = createInsertSchema(users).omit({
 
 export const insertProductSchema = createInsertSchema(products).omit({
   id: true,
-  scannedAt: true,
+  createdAt: true,
 });
 
 export const insertAnalysisSchema = createInsertSchema(analyses).omit({

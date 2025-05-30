@@ -150,12 +150,22 @@ export class SupabaseStorage implements IStorage {
 
   async upsertUser(userData: UpsertUser): Promise<User> {
     try {
+      const mappedData: any = {
+        id: userData.id,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Map camelCase to snake_case safely
+      if (userData.username) mappedData.username = userData.username;
+      if (userData.password) mappedData.password = userData.password;
+      if (userData.email !== undefined) mappedData.email = userData.email;
+      if (userData.firstName !== undefined) mappedData.first_name = userData.firstName;
+      if (userData.lastName !== undefined) mappedData.last_name = userData.lastName;
+      if (userData.profileImageUrl !== undefined) mappedData.profile_image_url = userData.profileImageUrl;
+
       const { data, error } = await supabase
         .from('users')
-        .upsert({
-          ...userData,
-          updated_at: new Date().toISOString(),
-        })
+        .upsert(mappedData)
         .select()
         .single();
 
@@ -205,12 +215,20 @@ export class SupabaseStorage implements IStorage {
 
   async createProduct(product: InsertProduct): Promise<Product> {
     try {
+      const mappedData = {
+        user_id: product.userId,
+        name: product.name,
+        brand: product.brand,
+        category: product.category,
+        ingredients: product.ingredients,
+        image_url: product.imageUrl,
+        image_data: product.imageData,
+        created_at: new Date().toISOString(),
+      };
+
       const { data, error } = await supabase
         .from('products')
-        .insert({
-          ...product,
-          created_at: new Date().toISOString(),
-        })
+        .insert(mappedData)
         .select()
         .single();
 
