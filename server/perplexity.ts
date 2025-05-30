@@ -118,6 +118,33 @@ export async function findProductIngredients(productName: string): Promise<strin
       /([A-Za-z\/\(\)\-\s]+(?:,\s*[A-Za-z\/\(\)\-\s]+){2,})/g,
     ];
     
+    // Сначала попробуем извлечь ингредиенты из списка с дефисами
+    const lines = rawResponse.split('\n');
+    const dashedIngredients: string[] = [];
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine.startsWith('- ')) {
+        const ingredient = trimmedLine.substring(2).trim();
+        
+        // Проверяем, что это действительно ингредиент
+        if (ingredient.length > 2 && 
+            ingredient.match(/^[A-Z0-9]/i) && // Начинается с буквы или цифры
+            !ingredient.toLowerCase().includes('here is') &&
+            !ingredient.toLowerCase().includes('note:') &&
+            !ingredient.toLowerCase().includes('the complete') &&
+            !ingredient.toLowerCase().includes('ingredient')) {
+          dashedIngredients.push(ingredient);
+        }
+      }
+    }
+    
+    console.log(`Found ${dashedIngredients.length} dashed ingredients:`, dashedIngredients.slice(0, 5));
+    
+    if (dashedIngredients.length >= 3) {
+      ingredientLines = dashedIngredients;
+    }
+    
     for (const pattern of patterns) {
       const matches = rawResponse.match(pattern);
       if (matches && matches.length > 0) {

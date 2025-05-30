@@ -742,7 +742,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Проверяем качество найденного состава
       const ingredientCount = ingredients.split(',').length;
-      if (ingredientCount < 5 || ingredients.length < 30) {
+      if (ingredientCount < 3 || ingredients.length < 20) {
         return res.json({ 
           ingredients: "",
           message: `Найден неполный состав продукта (${ingredientCount} ингредиентов). Для точного анализа рекомендуем отсканировать полный список с упаковки.`,
