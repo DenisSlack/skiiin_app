@@ -3,7 +3,6 @@ import {
   products,
   analyses,
   ingredients,
-  emailCodes,
   type User,
   type UpsertUser,
   type Product,
@@ -12,9 +11,9 @@ import {
   type InsertAnalysis,
   type Ingredient,
   type InsertIngredient,
-  type InsertEmailCode,
-  type EmailCode,
   type UpdateSkinProfile,
+  type LoginCredentials,
+  type RegisterData,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
@@ -22,9 +21,10 @@ import { eq, desc, and } from "drizzle-orm";
 // Interface for storage operations
 export interface IStorage {
   // User operations
-  // (IMPORTANT) these user operations are mandatory for Replit Auth.
   getUser(id: string): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(userData: RegisterData): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateSkinProfile(userId: string, profile: UpdateSkinProfile): Promise<User>;
   
@@ -43,12 +43,6 @@ export interface IStorage {
   getIngredient(name: string): Promise<Ingredient | undefined>;
   createIngredient(ingredient: InsertIngredient): Promise<Ingredient>;
   searchIngredients(query: string): Promise<Ingredient[]>;
-  
-  // Email code operations
-  createEmailCode(emailCode: InsertEmailCode): Promise<EmailCode>;
-  getValidEmailCode(email: string, code: string): Promise<EmailCode | undefined>;
-  markEmailCodeAsVerified(id: number): Promise<void>;
-  cleanupExpiredCodes(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -60,8 +54,30 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async createUser(userData: RegisterData): Promise<User> {
+    const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2)}`;
+    const [user] = await db
+      .insert(users)
+      .values({
+        id: userId,
+        username: userData.username,
+        password: userData.password, // In production, hash this password
+        email: userData.email || null,
+        firstName: userData.firstName || null,
+        lastName: userData.lastName || null,
+        profileImageUrl: null,
+      })
+      .returning();
     return user;
   }
 

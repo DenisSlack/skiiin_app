@@ -30,6 +30,8 @@ export const sessions = pgTable(
 // (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().notNull(),
+  username: varchar("username").unique().notNull(),
+  password: varchar("password").notNull(),
   email: varchar("email").unique(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
@@ -79,15 +81,7 @@ export const ingredients = pgTable("ingredients", {
   description: text("description"),
 });
 
-// Email verification codes table
-export const emailCodes = pgTable("email_codes", {
-  id: serial("id").primaryKey(),
-  email: varchar("email", { length: 255 }).notNull(),
-  code: varchar("code", { length: 6 }).notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  verified: boolean("verified").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-});
+// Removed email codes - using simple login/password auth
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
@@ -134,16 +128,24 @@ export const insertIngredientSchema = createInsertSchema(ingredients).omit({
   id: true,
 });
 
-export const insertEmailCodeSchema = createInsertSchema(emailCodes).omit({
-  id: true,
-  createdAt: true,
-});
-
 export const updateSkinProfileSchema = z.object({
   skinType: z.enum(["oily", "dry", "combination", "sensitive", "normal"]).optional(),
   skinConcerns: z.array(z.string()).optional(),
   allergies: z.array(z.string()).optional(),
   preferences: z.array(z.string()).optional(),
+});
+
+export const loginSchema = z.object({
+  username: z.string().min(1, "Введите логин"),
+  password: z.string().min(6, "Пароль должен содержать минимум 6 символов"),
+});
+
+export const registerSchema = z.object({
+  username: z.string().min(3, "Логин должен содержать минимум 3 символа"),
+  password: z.string().min(6, "Пароль должен содержать минимум 6 символов"),
+  email: z.string().email("Введите корректный email").optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
 });
 
 // Types
@@ -155,6 +157,6 @@ export type InsertAnalysis = z.infer<typeof insertAnalysisSchema>;
 export type Analysis = typeof analyses.$inferSelect;
 export type InsertIngredient = z.infer<typeof insertIngredientSchema>;
 export type Ingredient = typeof ingredients.$inferSelect;
-export type InsertEmailCode = z.infer<typeof insertEmailCodeSchema>;
-export type EmailCode = typeof emailCodes.$inferSelect;
 export type UpdateSkinProfile = z.infer<typeof updateSkinProfileSchema>;
+export type LoginCredentials = z.infer<typeof loginSchema>;
+export type RegisterData = z.infer<typeof registerSchema>;
