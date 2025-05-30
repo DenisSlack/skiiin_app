@@ -246,13 +246,7 @@ export default function AdminDashboard() {
                       </div>
                     )}
 
-                    {/* Debug info */}
-                    <div className="mb-4 p-2 bg-gray-100 rounded text-xs">
-                      <div>Loading: {tableLoading ? 'true' : 'false'}</div>
-                      <div>Table Data: {tableData ? 'exists' : 'null/undefined'}</div>
-                      <div>Is Array: {Array.isArray(tableData) ? 'true' : 'false'}</div>
-                      <div>Length: {tableData?.length || 0}</div>
-                    </div>
+
 
                     {/* Table Content */}
                     {!tableLoading && tableData && Array.isArray(tableData) && tableData.length > 0 && (
