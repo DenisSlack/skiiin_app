@@ -84,35 +84,16 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
       console.log("Setting isProcessing to true");
       setIsProcessing(true);
 
-      // Try OCR extraction, but continue even if it fails
+      // Skip OCR for now and prompt for manual input
       let text = extractedText;
       if (!text && capturedImage) {
-        console.log("Attempting OCR extraction...");
-        try {
-          text = await extractTextFromImage(capturedImage);
-          console.log("OCR completed successfully, text length:", text.length);
-          if (text && text.trim()) {
-            setExtractedText(text);
-            toast({
-              title: "Текст распознан!",
-              description: "Проверьте и отредактируйте если нужно",
-            });
-          } else {
-            console.log("OCR returned empty text");
-            toast({
-              title: "Автоматическое распознавание не сработало",
-              description: "Введите состав вручную в поле ниже",
-              variant: "destructive",
-            });
-          }
-        } catch (ocrError) {
-          console.error("OCR failed, continuing with manual input:", ocrError);
-          toast({
-            title: "Введите состав вручную",
-            description: "Автоматическое распознавание не удалось",
-            variant: "destructive",
-          });
-        }
+        console.log("Photo captured, prompting for manual input");
+        toast({
+          title: "Введите состав",
+          description: "Посмотрите на фото и введите ингредиенты в поле ниже",
+        });
+        setIsProcessing(false);
+        return;
       }
 
       if (!text.trim()) {
