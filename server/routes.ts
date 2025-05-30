@@ -287,6 +287,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Unified auth endpoint - handles both Replit auth and session auth
   app.get('/api/auth/user', async (req: any, res) => {
     try {
+      console.log("Auth check - Session:", req.session?.userId);
+      console.log("Auth check - Replit:", req.user?.claims?.sub);
+      
       // First check if user is authenticated via Replit
       if (req.isAuthenticated && req.isAuthenticated() && req.user?.claims?.sub) {
         const userId = req.user.claims.sub;
@@ -298,7 +301,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Then check session-based auth
       if (req.session?.userId) {
+        console.log("Searching for user with ID:", req.session.userId);
         const user = await storage.getUser(req.session.userId);
+        console.log("Found user:", user ? "Yes" : "No");
         if (user) {
           return res.json(user);
         }
@@ -401,7 +406,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/analysis', requireAuth, async (req: any, res) => {
     try {
       const userId = req.user.id;
+      
+      // Validate request data
+      if (!req.body.productId || !req.body.ingredientList) {
+        return res.status(400).json({ 
+          message: "Missing required fields: productId and ingredientList" 
+        });
+      }
+      
       const { productId, ingredientList } = req.body;
+      
+      // Validate productId is a number
+      const parsedProductId = parseInt(productId);
+      if (isNaN(parsedProductId)) {
+        return res.status(400).json({ message: "Invalid productId format" });
+      }
 
       // Get user's skin profile for personalized analysis
       const user = await storage.getUser(userId);
@@ -423,12 +442,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         // Try enhanced analysis with Perplexity first
         analysisResult = await analyzeIngredientsWithPerplexity(ingredientList, product.name, skinProfile);
+      } catch (perplexityError) {
+        console.error("Perplexity analysis failed:", perplexityError);
         
-        // Используем только результаты от Perplexity для обеспечения русскоязычного вывода
-        // Дополнительное исследование отключено для сохранения языка интерфейса
-      } catch (geminiError) {
-        console.error("Gemini analysis failed:", geminiError);
-        throw new Error("Failed to analyze ingredients with AI service");
+        try {
+          // Fallback to Gemini if Perplexity fails
+          const { analyzeIngredientsWithPerplexity: geminiAnalyze } = await import("./gemini");
+          analysisResult = await geminiAnalyze(ingredientList, product.name, skinProfile);
+        } catch (geminiError) {
+          console.error("Both AI services failed:", geminiError);
+          return res.status(503).json({ 
+            message: "AI analysis services temporarily unavailable. Please try again later.",
+            error: "ANALYSIS_SERVICE_UNAVAILABLE"
+          });
+        }
       }
 
       // Генерируем оценку продукта
