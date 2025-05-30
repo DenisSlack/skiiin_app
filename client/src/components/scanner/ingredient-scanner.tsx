@@ -199,12 +199,6 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
       setIsProcessing(true);
       
       const headers: any = { 'Content-Type': 'application/json' };
-      
-      // Add authorization token if available
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
 
       const response = await fetch('/api/products/find-ingredients', {
         method: 'POST',
