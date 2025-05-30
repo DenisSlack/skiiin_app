@@ -7,6 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Users, 
@@ -27,6 +30,8 @@ export default function AdminDashboard() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTable, setSelectedTable] = useState("users");
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   // Fetch admin data
   const { data: adminData } = useQuery({
@@ -86,6 +91,33 @@ export default function AdminDashboard() {
     },
   });
 
+  const updateUserMutation = useMutation({
+    mutationFn: async (userData: any) => {
+      const response = await fetch(`/api/admin/users/${userData.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userData),
+      });
+      if (!response.ok) throw new Error("Ошибка обновления");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/table", selectedTable, searchTerm] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      setIsEditDialogOpen(false);
+      setEditingUser(null);
+      toast({ title: "Пользователь обновлен успешно" });
+    },
+    onError: () => {
+      toast({ 
+        variant: "destructive", 
+        title: "Ошибка обновления пользователя" 
+      });
+    },
+  });
+
   const handleLogout = () => {
     fetch("/api/admin/logout", { method: "POST" });
     setLocation("/");
@@ -98,6 +130,17 @@ export default function AdminDashboard() {
       deleteMutation.mutate({ table: selectedTable, id });
     } else {
       console.log('User cancelled deletion');
+    }
+  };
+
+  const handleEditUser = (user: any) => {
+    setEditingUser({ ...user });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveUser = () => {
+    if (editingUser) {
+      updateUserMutation.mutate(editingUser);
     }
   };
 
@@ -281,7 +324,7 @@ export default function AdminDashboard() {
                                         variant="outline"
                                         size="sm"
                                         className="text-blue-600 hover:text-blue-800"
-                                        onClick={() => console.log('Edit clicked for:', record.id)}
+                                        onClick={() => handleEditUser(record)}
                                       >
                                         <Edit className="w-4 h-4" />
                                       </Button>
