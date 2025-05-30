@@ -1041,12 +1041,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { tableName } = req.params;
       const { search } = req.query;
 
-      console.log(`Fetching data for table: ${tableName}, search: ${search}`);
+      console.log(`=== Admin Table Request ===`);
+      console.log(`Table: ${tableName}`);
+      console.log(`Search: ${search}`);
+      console.log(`Full URL: ${req.originalUrl}`);
 
       let query = supabase.from(tableName).select('*').limit(100);
 
       // Add search functionality for text fields
       if (search && typeof search === 'string' && search.trim() !== '') {
+        console.log(`Adding search filter for: ${search}`);
         if (tableName === 'users') {
           query = query.or(`username.ilike.%${search}%, email.ilike.%${search}%`);
         } else if (tableName === 'products') {
@@ -1054,14 +1058,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      console.log(`Executing Supabase query for ${tableName}...`);
       const { data, error } = await query;
 
       if (error) {
         console.error(`Supabase error for ${tableName}:`, error);
-        throw error;
+        return res.status(500).json({ message: `Database error: ${error.message}` });
       }
 
-      console.log(`Found ${data?.length || 0} records in ${tableName}`);
+      console.log(`Successfully fetched ${data?.length || 0} records from ${tableName}`);
+      if (data && data.length > 0) {
+        console.log(`Sample record:`, JSON.stringify(data[0], null, 2));
+      } else {
+        console.log(`No records found in ${tableName} table`);
+      }
+      
       res.json(data || []);
     } catch (error) {
       console.error(`Error fetching ${req.params.tableName} data:`, error);
