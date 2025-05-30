@@ -32,15 +32,15 @@ export default function SkinProfileModal({ isOpen, onClose }: SkinProfileModalPr
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
-        title: "Profile Updated",
-        description: "Your skin profile has been saved successfully!",
+        title: "Профиль обновлен",
+        description: "Ваш профиль кожи успешно сохранен!",
       });
       onClose();
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to save profile. Please try again.",
+        title: "Ошибка",
+        description: "Не удалось сохранить профиль. Попробуйте еще раз.",
         variant: "destructive",
       });
     },
@@ -257,7 +257,7 @@ export default function SkinProfileModal({ isOpen, onClose }: SkinProfileModalPr
               disabled={currentStep === 1}
             >
               <ArrowLeft className="w-4 h-4 mr-1" />
-              Back
+              Назад
             </Button>
             <Button
               className="flex-1 app-gradient text-white font-medium"
@@ -265,12 +265,12 @@ export default function SkinProfileModal({ isOpen, onClose }: SkinProfileModalPr
               disabled={!canProceed() || updateProfileMutation.isPending}
             >
               {updateProfileMutation.isPending ? (
-                "Saving..."
+                "Сохранение..."
               ) : currentStep === totalSteps ? (
-                "Complete"
+                "Завершить"
               ) : (
                 <>
-                  Next
+                  Далее
                   <ArrowRight className="w-4 h-4 ml-1" />
                 </>
               )}
