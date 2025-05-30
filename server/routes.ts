@@ -6,6 +6,12 @@ import { analyzeIngredientsWithPerplexity, findProductIngredients, generatePartn
 import { scoreProduct } from "./scoring";
 import { insertProductSchema, insertAnalysisSchema, updateSkinProfileSchema, loginSchema, registerSchema, smsLoginSchema, smsVerifySchema } from "@shared/schema";
 import { sendSMSCode, generateSMSCode } from "./smsService";
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 import { z } from "zod";
 
 // Simple session authentication middleware
@@ -955,6 +961,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching stats:", error);
       res.status(500).json({ message: "Failed to fetch stats" });
+    }
+  });
+
+  // Admin authentication middleware
+  const adminAuth = (req: any, res: any, next: any) => {
+    const { adminSession } = req.session || {};
+    if (!adminSession?.isAuthenticated) {
+      return res.status(401).json({ message: "Admin authentication required" });
+    }
+    next();
+  };
+
+  // Admin login
+  app.post('/api/admin/login', async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      // Simple admin credentials (in production, use secure authentication)
+      const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+      const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+      
+      if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+        req.session.adminSession = { isAuthenticated: true, username };
+        res.json({ success: true, message: "Admin login successful" });
+      } else {
+        res.status(401).json({ message: "Invalid admin credentials" });
+      }
+    } catch (error) {
+      console.error("Admin login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // Admin logout
+  app.post('/api/admin/logout', (req: any, res) => {
+    req.session.adminSession = null;
+    res.json({ success: true });
+  });
+
+  // Admin stats
+  app.get('/api/admin/stats', adminAuth, async (req, res) => {
+    try {
+      const { data: users } = await supabase.from('users').select('count');
+      const { data: products } = await supabase.from('products').select('count');
+      const { data: analyses } = await supabase.from('analyses').select('count');
+
+      res.json({
+        userCount: users?.length || 0,
+        productCount: products?.length || 0,
+        analysisCount: analyses?.length || 0,
+      });
+    } catch (error) {
+      console.error("Error fetching admin stats:", error);
+      res.status(500).json({ message: "Failed to fetch stats" });
+    }
+  });
+
+  // Get table list
+  app.get('/api/admin/tables', adminAuth, (req, res) => {
+    res.json(['users', 'products', 'analyses', 'ingredients', 'sms_codes']);
+  });
+
+  // Get table data with search
+  app.get('/api/admin/table/:tableName', adminAuth, async (req, res) => {
+    try {
+      const { tableName } = req.params;
+      const { search } = req.query;
+
+      let query = supabase.from(tableName).select('*').limit(100);
+
+      // Add search functionality for text fields
+      if (search && typeof search === 'string') {
+        if (tableName === 'users') {
+          query = query.or(`username.ilike.%${search}%, email.ilike.%${search}%`);
+        } else if (tableName === 'products') {
+          query = query.or(`name.ilike.%${search}%, brand.ilike.%${search}%`);
+        }
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        throw error;
+      }
+
+      res.json(data || []);
+    } catch (error) {
+      console.error(`Error fetching ${req.params.tableName} data:`, error);
+      res.status(500).json({ message: "Failed to fetch table data" });
+    }
+  });
+
+  // Delete record from table
+  app.delete('/api/admin/:tableName/:id', adminAuth, async (req, res) => {
+    try {
+      const { tableName, id } = req.params;
+
+      const { error } = await supabase
+        .from(tableName)
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error(`Error deleting record from ${req.params.tableName}:`, error);
+      res.status(500).json({ message: "Failed to delete record" });
+    }
+  });
+
+  // Update record in table
+  app.put('/api/admin/:tableName/:id', adminAuth, async (req, res) => {
+    try {
+      const { tableName, id } = req.params;
+      const updateData = req.body;
+
+      const { data, error } = await supabase
+        .from(tableName)
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      res.json(data);
+    } catch (error) {
+      console.error(`Error updating record in ${req.params.tableName}:`, error);
+      res.status(500).json({ message: "Failed to update record" });
     }
   });
 
