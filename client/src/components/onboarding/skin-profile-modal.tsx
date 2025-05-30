@@ -26,8 +26,7 @@ export default function SkinProfileModal({ isOpen, onClose }: SkinProfileModalPr
 
   const updateProfileMutation = useMutation({
     mutationFn: async (profileData: any) => {
-      const response = await apiRequest("PUT", "/api/profile/skin", profileData);
-      return response.json();
+      return await apiRequest("/api/profile/skin", "PUT", profileData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
