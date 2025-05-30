@@ -94,7 +94,8 @@ router.post('/api/products/analyze', async (req: any, res) => {
     
     // Добавляем оценку продукта
     if (analysis.ingredients) {
-      const scoring = scoreProduct(analysis.ingredients, skinProfile);
+      const ingredientNames = analysis.ingredients.map((ing: any) => ing.name);
+      const scoring = scoreProduct(ingredientNames, "Product", skinProfile);
       analysis.scoring = scoring;
     }
 
