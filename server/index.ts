@@ -66,8 +66,7 @@ const authLimiter = rateLimit({
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 
-// Централизованное логирование запросов
-app.use(morgan('combined', { stream }));
+// Логирование временно отключено
 
 // Set trust proxy for session cookies to work properly
 app.set("trust proxy", 1);
@@ -112,30 +111,24 @@ app.use((req, res, next) => {
         logLine = logLine.slice(0, 79) + "…";
       }
 
-      logger.info(logLine);
+      console.log(logLine);
     }
   });
 
   next();
 });
 
-// Метрики
-app.use(metricsMiddleware as any);
-
-// CSRF middleware (cookie-based)
+// Временно убрали CSRF и метрики
 app.use(cookieParser());
-app.use(csurf({ cookie: true }));
-
-// Эндпоинт для получения CSRF-токена
-app.get('/api/csrf-token', (req, res) => {
-  res.json({ csrfToken: req.csrfToken() });
-});
 
 (async () => {
   const server = await registerRoutes(app);
 
-  // Важно: обработчик ошибок должен быть последним middleware
-  app.use(errorHandler);
+  // Простой обработчик ошибок
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    console.error('Error:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  });
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
@@ -155,6 +148,6 @@ app.get('/api/csrf-token', (req, res) => {
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    logger.info(`Server started on port ${port}`);
+    console.log(`Server started on port ${port}`);
   });
 })();
