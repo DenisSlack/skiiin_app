@@ -4,12 +4,96 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { analyzeIngredientsWithPerplexity, findProductIngredients, generatePartnerRecommendations, extractIngredientsFromText, findProductImage, getPersonalizedRecommendation } from "./perplexity";
 import { scoreProduct } from "./scoring";
+import { sendVerificationCode, generateVerificationCode } from "./emailService";
 import { insertProductSchema, insertAnalysisSchema, updateSkinProfileSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
+
+  // Email authentication routes
+  app.post('/api/auth/send-code', async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email || !email.includes('@')) {
+        return res.status(400).json({ message: "Введите корректный email адрес" });
+      }
+
+      const code = generateVerificationCode();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      // Save code to database
+      await storage.createEmailCode({
+        email,
+        code,
+        expiresAt,
+        verified: false,
+      });
+
+      // Send email
+      const emailSent = await sendVerificationCode({ email, code });
+      
+      if (!emailSent) {
+        return res.status(500).json({ message: "Не удалось отправить код. Попробуйте еще раз." });
+      }
+
+      res.json({ message: "Код отправлен на ваш email" });
+    } catch (error) {
+      console.error("Error sending verification code:", error);
+      res.status(500).json({ message: "Ошибка отправки кода" });
+    }
+  });
+
+  app.post('/api/auth/verify-code', async (req, res) => {
+    try {
+      const { email, code } = req.body;
+      
+      if (!email || !code) {
+        return res.status(400).json({ message: "Введите email и код" });
+      }
+
+      const emailCode = await storage.getValidEmailCode(email, code);
+      
+      if (!emailCode) {
+        return res.status(400).json({ message: "Неверный или истёкший код" });
+      }
+
+      // Mark code as verified
+      await storage.markEmailCodeAsVerified(emailCode.id);
+
+      // Get or create user
+      let user = await storage.getUserByEmail(email);
+      if (!user) {
+        user = await storage.upsertUser({
+          id: email, // Use email as ID for email auth
+          email: email,
+          firstName: null,
+          lastName: null,
+          profileImageUrl: null,
+        });
+      }
+
+      // Create session (simplified - in production use proper session management)
+      req.session.userId = user.id;
+      req.session.email = user.email;
+
+      res.json({ user, message: "Вход выполнен успешно" });
+    } catch (error) {
+      console.error("Error verifying code:", error);
+      res.status(500).json({ message: "Ошибка проверки кода" });
+    }
+  });
+
+  app.post('/api/auth/logout', (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Ошибка выхода" });
+      }
+      res.json({ message: "Выход выполнен успешно" });
+    });
+  });
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
