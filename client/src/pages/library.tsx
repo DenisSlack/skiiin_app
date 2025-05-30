@@ -45,7 +45,7 @@ export default function Library() {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <BookOpen className="w-6 h-6 text-primary" />
-            <h2 className="text-xl font-semibold">My Library</h2>
+            <h2 className="text-xl font-semibold">Моя библиотека</h2>
           </div>
           <Button
             size="sm"
@@ -53,7 +53,7 @@ export default function Library() {
             className="app-gradient text-white"
           >
             <Plus className="w-4 h-4 mr-1" />
-            Add Product
+            Добавить продукт
           </Button>
         </div>
 
@@ -65,15 +65,15 @@ export default function Library() {
                 <BookOpen className="w-8 h-8 text-gray-400" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-lg font-semibold">No products yet</h3>
-                <p className="text-gray-600 text-sm">Start by scanning your first product to build your personalized library</p>
+                <h3 className="text-lg font-semibold">Пока нет продуктов</h3>
+                <p className="text-gray-600 text-sm">Начните сканирование первого продукта для создания персональной библиотеки</p>
               </div>
               <Button
                 onClick={() => setLocation("/scanner")}
                 className="app-gradient text-white"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Scan Your First Product
+                Сканировать первый продукт
               </Button>
             </CardContent>
           </Card>

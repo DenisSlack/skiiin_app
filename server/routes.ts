@@ -17,7 +17,26 @@ import { z } from "zod";
 // Unified authentication middleware
 const requireAuth = async (req: any, res: any, next: any) => {
   try {
-    // First check Replit authentication
+    // Check for temporary token in Authorization header
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      try {
+        const decoded = Buffer.from(token, 'base64').toString();
+        const [userId] = decoded.split(':');
+        if (userId) {
+          const user = await storage.getUser(userId);
+          if (user) {
+            req.user = user;
+            return next();
+          }
+        }
+      } catch (tokenError) {
+        console.log("Invalid token format");
+      }
+    }
+
+    // Check Replit authentication
     if (req.isAuthenticated && req.isAuthenticated() && req.user?.claims?.sub) {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
@@ -27,7 +46,7 @@ const requireAuth = async (req: any, res: any, next: any) => {
       }
     }
     
-    // Then check session-based authentication
+    // Check session-based authentication
     if (req.session?.userId) {
       const user = await storage.getUser(req.session.userId);
       if (user) {
