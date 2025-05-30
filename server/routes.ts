@@ -14,16 +14,33 @@ const supabase = createClient(
 );
 import { z } from "zod";
 
-// Simple session authentication middleware
+// Unified authentication middleware
 const requireAuth = async (req: any, res: any, next: any) => {
-  if (req.session?.userId) {
-    const user = await storage.getUser(req.session.userId);
-    if (user) {
-      req.user = user;
-      return next();
+  try {
+    // First check Replit authentication
+    if (req.isAuthenticated && req.isAuthenticated() && req.user?.claims?.sub) {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (user) {
+        req.user = user;
+        return next();
+      }
     }
+    
+    // Then check session-based authentication
+    if (req.session?.userId) {
+      const user = await storage.getUser(req.session.userId);
+      if (user) {
+        req.user = user;
+        return next();
+      }
+    }
+    
+    return res.status(401).json({ message: "Unauthorized" });
+  } catch (error) {
+    console.error("Authentication error:", error);
+    return res.status(401).json({ message: "Unauthorized" });
   }
-  return res.status(401).json({ message: "Unauthorized" });
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -267,10 +284,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Auth routes
-  app.get('/api/auth/user', requireAuth, async (req: any, res) => {
+  // Unified auth endpoint - handles both Replit auth and session auth
+  app.get('/api/auth/user', async (req: any, res) => {
     try {
-      res.json(req.user);
+      // First check if user is authenticated via Replit
+      if (req.isAuthenticated && req.isAuthenticated() && req.user?.claims?.sub) {
+        const userId = req.user.claims.sub;
+        const user = await storage.getUser(userId);
+        if (user) {
+          return res.json(user);
+        }
+      }
+      
+      // Then check session-based auth
+      if (req.session?.userId) {
+        const user = await storage.getUser(req.session.userId);
+        if (user) {
+          return res.json(user);
+        }
+      }
+      
+      return res.status(401).json({ message: "Unauthorized" });
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
@@ -575,7 +609,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (parseError) {
         console.error("Failed to parse reviews JSON:", parseError);
         // Fallback: extract reviews from text
-        const lines = text.split('\n').filter(line => line.trim().length > 10);
+        const lines = text.split('\n').filter((line: string) => line.trim().length > 10);
         reviews = lines.slice(0, 5);
       }
       
@@ -696,8 +730,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } catch (parseError) {
         // If JSON parsing fails, try to extract ingredients from raw text
-        const lines = responseText.split('\n').filter(line => line.trim());
-        const ingredientsLine = lines.find(line => 
+        const lines = responseText.split('\n').filter((line: string) => line.trim());
+        const ingredientsLine = lines.find((line: string) => 
           line.toLowerCase().includes('ingredient') || 
           line.includes('aqua') || 
           line.includes('glycerin')
