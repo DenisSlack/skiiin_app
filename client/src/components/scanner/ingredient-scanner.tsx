@@ -216,7 +216,7 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
       console.log("API response:", data);
       
       // Check if we have valid ingredients data
-      if (!data.ingredients || data.ingredients.trim().length === 0) {
+      if (!data.ingredients || typeof data.ingredients !== 'string' || data.ingredients.trim().length === 0) {
         console.log("No ingredients found in response:", data);
         toast({
           title: "Состав не найден",
