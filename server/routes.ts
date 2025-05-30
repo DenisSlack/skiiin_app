@@ -4,7 +4,8 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { analyzeIngredientsWithPerplexity, findProductIngredients, generatePartnerRecommendations, extractIngredientsFromText, findProductImage, getPersonalizedRecommendation } from "./perplexity";
 import { scoreProduct } from "./scoring";
-import { insertProductSchema, insertAnalysisSchema, updateSkinProfileSchema, loginSchema, registerSchema } from "@shared/schema";
+import { insertProductSchema, insertAnalysisSchema, updateSkinProfileSchema, loginSchema, registerSchema, smsLoginSchema, smsVerifySchema } from "@shared/schema";
+import { sendSMSCode, generateSMSCode } from "./smsService";
 import { z } from "zod";
 
 // Simple session authentication middleware
@@ -126,6 +127,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json({ message: "Выход выполнен успешно" });
     });
+  });
+
+  // SMS Authentication routes
+  app.post('/api/auth/sms/send', async (req, res) => {
+    try {
+      const result = smsLoginSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Некорректные данные", 
+          errors: result.error.issues 
+        });
+      }
+
+      const { phone } = result.data;
+      const code = generateSMSCode();
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 10); // 10 minutes
+
+      // Cleanup old codes
+      await storage.cleanupExpiredSmsCodes();
+
+      // Save SMS code to database
+      await storage.createSmsCode({
+        phone,
+        code,
+        expiresAt,
+        verified: false
+      });
+
+      // Send SMS
+      const smsSent = await sendSMSCode({ phone, code });
+      
+      if (!smsSent) {
+        return res.status(500).json({ 
+          message: "Не удалось отправить SMS. Проверьте настройки SMS-сервиса." 
+        });
+      }
+
+      res.json({ 
+        message: "SMS с кодом отправлен", 
+        phone 
+      });
+    } catch (error) {
+      console.error("Error sending SMS:", error);
+      res.status(500).json({ message: "Ошибка отправки SMS" });
+    }
+  });
+
+  app.post('/api/auth/sms/verify', async (req, res) => {
+    try {
+      const result = smsVerifySchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Некорректные данные", 
+          errors: result.error.issues 
+        });
+      }
+
+      const { phone, code } = result.data;
+
+      // Verify SMS code
+      const smsCode = await storage.getValidSmsCode(phone, code);
+      if (!smsCode) {
+        return res.status(400).json({ 
+          message: "Неверный или истекший код" 
+        });
+      }
+
+      // Mark code as verified
+      await storage.markSmsCodeAsVerified(smsCode.id);
+
+      // Find or create user
+      let user = await storage.getUserByPhone(phone);
+      if (!user) {
+        user = await storage.createUserWithPhone(phone);
+      }
+
+      // Create session
+      (req.session as any).userId = user.id;
+      (req.session as any).username = user.username;
+
+      res.json({ 
+        user, 
+        message: "Вход выполнен успешно" 
+      });
+    } catch (error) {
+      console.error("Error verifying SMS:", error);
+      res.status(500).json({ message: "Ошибка верификации SMS" });
+    }
   });
 
   // Auth routes

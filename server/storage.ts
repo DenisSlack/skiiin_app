@@ -19,7 +19,7 @@ import {
   type SmsCode,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, lt } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -216,7 +216,50 @@ export class DatabaseStorage implements IStorage {
       .limit(10);
   }
 
-  // No email verification needed for simple login/password auth
+  // SMS code operations
+  async createSmsCode(smsCode: InsertSmsCode): Promise<SmsCode> {
+    const [code] = await db
+      .insert(smsCodes)
+      .values(smsCode)
+      .returning();
+    return code;
+  }
+
+  async getValidSmsCode(phone: string, code: string): Promise<SmsCode | undefined> {
+    const [smsCode] = await db
+      .select()
+      .from(smsCodes)
+      .where(
+        and(
+          eq(smsCodes.phone, phone),
+          eq(smsCodes.code, code),
+          eq(smsCodes.verified, false)
+        )
+      )
+      .orderBy(desc(smsCodes.createdAt));
+    
+    if (!smsCode) return undefined;
+    
+    // Check if code is expired
+    if (new Date() > smsCode.expiresAt) {
+      return undefined;
+    }
+    
+    return smsCode;
+  }
+
+  async markSmsCodeAsVerified(id: number): Promise<void> {
+    await db
+      .update(smsCodes)
+      .set({ verified: true })
+      .where(eq(smsCodes.id, id));
+  }
+
+  async cleanupExpiredSmsCodes(): Promise<void> {
+    await db
+      .delete(smsCodes)
+      .where(eq(smsCodes.verified, true));
+  }
 }
 
 export const storage = new DatabaseStorage();
