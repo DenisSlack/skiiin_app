@@ -76,11 +76,11 @@ export async function findProductIngredients(productName: string): Promise<strin
         messages: [
           {
             role: "system",
-            content: "Выдай результат в виде списка ингредиентов указанных в составе данного продукта. Никаких объяснений, только список через запятую НА АНГЛИЙСКОМ ЯЗЫКЕ."
+            content: "Верни ТОЛЬКО список ингредиентов через запятую без дефисов, нумерации и объяснений. Пример: Water, Glycerin, Dimethicone, Niacinamide. НА АНГЛИЙСКОМ ЯЗЫКЕ."
           },
           {
             role: "user",
-            content: `Find COMPLETE ingredients list for "${productName}". Return FULL INCI list with ALL ingredients in English, like: Water, Glycerin, Cetearyl Alcohol, Dimethicone, Niacinamide, Ceramide NP, Ceramide AP, Hyaluronic Acid, Cholesterol, Phenoxyethanol, Ethylhexylglycerin`
+            content: `Find complete ingredients list for "${productName}". Return ingredients separated by commas: Water, Glycerin, Cetearyl Alcohol, Dimethicone, Niacinamide, Sodium Hydroxide, Phenoxyethanol`
           }
         ],
         max_tokens: 500,
