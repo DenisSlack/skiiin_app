@@ -92,8 +92,12 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteRecord = (id: string) => {
+    console.log('handleDeleteRecord called with:', id, 'table:', selectedTable);
     if (confirm("Вы уверены, что хотите удалить эту запись?")) {
+      console.log('User confirmed deletion, calling mutation...');
       deleteMutation.mutate({ table: selectedTable, id });
+    } else {
+      console.log('User cancelled deletion');
     }
   };
 
