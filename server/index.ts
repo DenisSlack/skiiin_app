@@ -6,15 +6,18 @@ const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 
-// Configure CSP to allow OCR libraries
+// Configure CSP to allow OCR libraries and WebAssembly
 app.use((req, res, next) => {
   res.setHeader(
     'Content-Security-Policy',
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob:; " +
-    "worker-src 'self' blob:; " +
-    "connect-src 'self' https://api.perplexity.ai https://generativelanguage.googleapis.com; " +
-    "img-src 'self' data: blob:; " +
+    "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: data: 'wasm-unsafe-eval'; " +
+    "worker-src 'self' blob: data:; " +
+    "connect-src 'self' https://api.perplexity.ai https://generativelanguage.googleapis.com blob: data:; " +
+    "img-src 'self' data: blob: https:; " +
+    "media-src 'self' blob: data:; " +
+    "object-src 'none'; " +
+    "base-uri 'self'; " +
     "style-src 'self' 'unsafe-inline';"
   );
   next();

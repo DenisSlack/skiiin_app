@@ -84,16 +84,48 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
       console.log("Setting isProcessing to true");
       setIsProcessing(true);
 
-      // Prompt for manual input after photo is taken
+      // Try automatic OCR extraction first
       let text = extractedText;
       if (!text && capturedImage) {
-        console.log("Photo captured, requesting manual input");
-        toast({
-          title: "Введите состав",
-          description: "Посмотрите на фото и введите ингредиенты в поле ниже",
-        });
-        setIsProcessing(false);
-        return;
+        console.log("Attempting automatic text extraction...");
+        try {
+          const ocrResponse = await fetch('/api/extract-text', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageData: capturedImage })
+          });
+          
+          if (ocrResponse.ok) {
+            const ocrData = await ocrResponse.json();
+            if (ocrData.text && ocrData.text !== "NO_INGREDIENTS_FOUND" && ocrData.text !== "MANUAL_INPUT_REQUIRED" && ocrData.text.trim()) {
+              text = ocrData.text;
+              setExtractedText(text);
+              toast({
+                title: "Текст распознан автоматически!",
+                description: "Проверьте и отредактируйте если нужно",
+              });
+            } else {
+              toast({
+                title: "Введите состав вручную",
+                description: "Автоматическое распознавание не сработало",
+                variant: "destructive",
+              });
+              setIsProcessing(false);
+              return;
+            }
+          } else {
+            throw new Error('OCR request failed');
+          }
+        } catch (ocrError) {
+          console.error("OCR failed:", ocrError);
+          toast({
+            title: "Введите состав вручную",
+            description: "Автоматическое распознавание не удалось",
+            variant: "destructive",
+          });
+          setIsProcessing(false);
+          return;
+        }
       }
 
       if (!text.trim()) {

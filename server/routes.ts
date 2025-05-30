@@ -390,10 +390,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Perplexity OCR text extraction endpoint
+  // Gemini Vision OCR text extraction endpoint
   app.post("/api/extract-text", isAuthenticated, async (req, res) => {
     try {
-      console.log("Starting Perplexity OCR extraction...");
+      console.log("Starting Gemini Vision OCR extraction...");
       const { imageData } = req.body;
       
       if (!imageData) {
@@ -401,17 +401,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Image data is required" });
       }
 
-      // For now, let's simulate OCR and prompt user to enter manually
-      // This ensures the flow works while we work on the OCR implementation
-      console.log("OCR simulation - prompting for manual input");
+      console.log("Image data length:", imageData.length);
       
-      res.json({ 
-        text: "MANUAL_INPUT_REQUIRED",
-        message: "Пожалуйста, введите состав вручную из фотографии"
-      });
+      // Extract text using Gemini Vision API
+      const base64Image = imageData.replace(/^data:image\/[a-z]+;base64,/, '');
+      console.log("Base64 image length after cleanup:", base64Image.length);
       
+      const { GoogleGenerativeAI } = require('@google/generative-ai');
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+      const prompt = `
+        Extract ONLY the ingredients list from this cosmetic product image.
+        Look for ingredient names like: Aqua, Glycerin, Niacinamide, Cetearyl Alcohol, etc.
+        Return the ingredients exactly as written on the package, comma-separated.
+        If no clear ingredients are visible, return "NO_INGREDIENTS_FOUND".
+        Focus on INCI names (usually in English).
+      `;
+
+      console.log("Sending request to Gemini Vision API...");
+      const result = await model.generateContent([
+        prompt,
+        {
+          inlineData: {
+            data: base64Image,
+            mimeType: "image/jpeg"
+          }
+        }
+      ]);
+
+      const extractedText = result.response.text();
+      console.log("Gemini Vision OCR result:", extractedText);
+      
+      res.json({ text: extractedText });
     } catch (error) {
-      console.error("OCR error:", error);
+      console.error("Gemini Vision OCR error:", error);
       res.status(500).json({ message: "Failed to extract text from image" });
     }
   });
