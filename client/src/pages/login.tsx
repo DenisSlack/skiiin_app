@@ -1,19 +1,19 @@
 import { useLocation } from "wouter";
-import EmailLogin from "@/components/auth/email-login";
+import Login from "@/components/auth/email-login";
 import { useQueryClient } from "@tanstack/react-query";
 
-export default function Login() {
+export default function LoginPage() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
 
   const handleLoginSuccess = () => {
     // Invalidate queries to refetch user data
-    queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/auth/session"] });
     // Redirect to home page
     setLocation("/");
   };
 
   return (
-    <EmailLogin onSuccess={handleLoginSuccess} />
+    <Login onSuccess={handleLoginSuccess} />
   );
 }

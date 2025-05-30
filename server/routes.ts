@@ -4,85 +4,91 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { analyzeIngredientsWithPerplexity, findProductIngredients, generatePartnerRecommendations, extractIngredientsFromText, findProductImage, getPersonalizedRecommendation } from "./perplexity";
 import { scoreProduct } from "./scoring";
-import { sendVerificationCode, generateVerificationCode } from "./emailService";
-import { insertProductSchema, insertAnalysisSchema, updateSkinProfileSchema } from "@shared/schema";
+import { insertProductSchema, insertAnalysisSchema, updateSkinProfileSchema, loginSchema, registerSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
-  // Email authentication routes
-  app.post('/api/auth/send-code', async (req, res) => {
+  // Simple login/password authentication routes
+  app.post('/api/auth/register', async (req, res) => {
     try {
-      const { email } = req.body;
-      
-      if (!email || !email.includes('@')) {
-        return res.status(400).json({ message: "Введите корректный email адрес" });
-      }
-
-      const code = generateVerificationCode();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-      // Save code to database
-      await storage.createEmailCode({
-        email,
-        code,
-        expiresAt,
-        verified: false,
-      });
-
-      // Send email
-      const emailSent = await sendVerificationCode({ email, code });
-      
-      if (!emailSent) {
-        return res.status(500).json({ message: "Не удалось отправить код. Попробуйте еще раз." });
-      }
-
-      res.json({ message: "Код отправлен на ваш email" });
-    } catch (error) {
-      console.error("Error sending verification code:", error);
-      res.status(500).json({ message: "Ошибка отправки кода" });
-    }
-  });
-
-  app.post('/api/auth/verify-code', async (req, res) => {
-    try {
-      const { email, code } = req.body;
-      
-      if (!email || !code) {
-        return res.status(400).json({ message: "Введите email и код" });
-      }
-
-      const emailCode = await storage.getValidEmailCode(email, code);
-      
-      if (!emailCode) {
-        return res.status(400).json({ message: "Неверный или истёкший код" });
-      }
-
-      // Mark code as verified
-      await storage.markEmailCodeAsVerified(emailCode.id);
-
-      // Get or create user
-      let user = await storage.getUserByEmail(email);
-      if (!user) {
-        user = await storage.upsertUser({
-          id: email, // Use email as ID for email auth
-          email: email,
-          firstName: null,
-          lastName: null,
-          profileImageUrl: null,
+      const result = registerSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Ошибка валидации", 
+          errors: result.error.issues 
         });
       }
 
-      // Create session (simplified - in production use proper session management)
-      req.session.userId = user.id;
-      req.session.email = user.email;
+      const { username, password, email, firstName, lastName } = result.data;
+
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(400).json({ message: "Пользователь с таким логином уже существует" });
+      }
+
+      // Check if email already exists (if provided)
+      if (email) {
+        const existingEmailUser = await storage.getUserByEmail(email);
+        if (existingEmailUser) {
+          return res.status(400).json({ message: "Пользователь с таким email уже существует" });
+        }
+      }
+
+      // Create user
+      const user = await storage.createUser({
+        username,
+        password,
+        email,
+        firstName,
+        lastName,
+      });
+
+      // Create session
+      (req.session as any).userId = user.id;
+      (req.session as any).username = user.username;
+
+      res.json({ user, message: "Регистрация прошла успешно" });
+    } catch (error) {
+      console.error("Error registering user:", error);
+      res.status(500).json({ message: "Ошибка регистрации" });
+    }
+  });
+
+  app.post('/api/auth/login', async (req, res) => {
+    try {
+      const result = loginSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Ошибка валидации", 
+          errors: result.error.issues 
+        });
+      }
+
+      const { username, password } = result.data;
+
+      // Find user by username
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(400).json({ message: "Неверный логин или пароль" });
+      }
+
+      // Check password (in production, use proper password hashing)
+      if (user.password !== password) {
+        return res.status(400).json({ message: "Неверный логин или пароль" });
+      }
+
+      // Create session
+      (req.session as any).userId = user.id;
+      (req.session as any).username = user.username;
 
       res.json({ user, message: "Вход выполнен успешно" });
     } catch (error) {
-      console.error("Error verifying code:", error);
-      res.status(500).json({ message: "Ошибка проверки кода" });
+      console.error("Error logging in:", error);
+      res.status(500).json({ message: "Ошибка входа" });
     }
   });
 

@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { FlaskConical, Camera, UserCheck, Save, Mail } from "lucide-react";
+import { FlaskConical, Camera, UserCheck, Save, User } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Landing() {
@@ -72,8 +72,8 @@ export default function Landing() {
               className="w-full app-gradient text-white py-4 text-lg font-medium"
               size="lg"
             >
-              <Mail className="w-5 h-5 mr-2" />
-              Войти через Email
+              <User className="w-5 h-5 mr-2" />
+              Начать
             </Button>
           </Link>
           <p className="text-xs text-gray-500 text-center">

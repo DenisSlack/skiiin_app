@@ -182,50 +182,7 @@ export class DatabaseStorage implements IStorage {
       .limit(10);
   }
 
-  // Email code operations
-  async createEmailCode(emailCode: InsertEmailCode): Promise<EmailCode> {
-    const [code] = await db
-      .insert(emailCodes)
-      .values(emailCode)
-      .returning();
-    return code;
-  }
-
-  async getValidEmailCode(email: string, code: string): Promise<EmailCode | undefined> {
-    const [emailCode] = await db
-      .select()
-      .from(emailCodes)
-      .where(
-        and(
-          eq(emailCodes.email, email),
-          eq(emailCodes.code, code),
-          eq(emailCodes.verified, false)
-        )
-      )
-      .orderBy(desc(emailCodes.createdAt));
-    
-    if (!emailCode) return undefined;
-    
-    // Check if code is expired
-    if (new Date() > emailCode.expiresAt) {
-      return undefined;
-    }
-    
-    return emailCode;
-  }
-
-  async markEmailCodeAsVerified(id: number): Promise<void> {
-    await db
-      .update(emailCodes)
-      .set({ verified: true })
-      .where(eq(emailCodes.id, id));
-  }
-
-  async cleanupExpiredCodes(): Promise<void> {
-    await db
-      .delete(emailCodes)
-      .where(eq(emailCodes.verified, true));
-  }
+  // No email verification needed for simple login/password auth
 }
 
 export const storage = new DatabaseStorage();
