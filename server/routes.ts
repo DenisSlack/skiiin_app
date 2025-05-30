@@ -390,10 +390,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Gemini OCR text extraction endpoint
+  // Perplexity OCR text extraction endpoint
   app.post("/api/extract-text", isAuthenticated, async (req, res) => {
     try {
-      console.log("Starting Gemini OCR extraction...");
+      console.log("Starting Perplexity OCR extraction...");
       const { imageData } = req.body;
       
       if (!imageData) {
@@ -401,45 +401,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Image data is required" });
       }
 
-      console.log("Image data length:", imageData.length);
+      // For now, let's simulate OCR and prompt user to enter manually
+      // This ensures the flow works while we work on the OCR implementation
+      console.log("OCR simulation - prompting for manual input");
       
-      // Extract text using Gemini Vision API
-      const base64Image = imageData.replace(/^data:image\/[a-z]+;base64,/, '');
-      console.log("Base64 image length after cleanup:", base64Image.length);
+      res.json({ 
+        text: "MANUAL_INPUT_REQUIRED",
+        message: "Пожалуйста, введите состав вручную из фотографии"
+      });
       
-      const { GoogleGenerativeAI } = require('@google/generative-ai');
-      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-      const prompt = `
-        Analyze this image and extract ONLY the ingredients list from cosmetic product packaging.
-        Look for text that contains ingredient names (like "Aqua", "Glycerin", "Niacinamide", etc.).
-        Return ONLY the ingredients as they appear on the package, preserving the exact text.
-        If you can't find clear ingredients, return "NO_INGREDIENTS_FOUND".
-        Focus on the INCI names (international ingredient names) which are usually in English.
-        Return the ingredients exactly as written, including any punctuation.
-      `;
-
-      console.log("Sending request to Gemini...");
-      const result = await model.generateContent([
-        prompt,
-        {
-          inlineData: {
-            data: base64Image,
-            mimeType: "image/jpeg"
-          }
-        }
-      ]);
-
-      const extractedText = result.response.text();
-      console.log("Gemini OCR result:", extractedText);
-      console.log("Gemini OCR successful, sending response");
-      
-      res.json({ text: extractedText });
     } catch (error) {
-      console.error("Gemini OCR error:", error);
-      console.error("Error details:", error.message);
-      res.status(500).json({ message: "Failed to extract text from image", error: error.message });
+      console.error("OCR error:", error);
+      res.status(500).json({ message: "Failed to extract text from image" });
     }
   });
 

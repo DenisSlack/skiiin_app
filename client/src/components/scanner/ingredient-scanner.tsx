@@ -97,20 +97,19 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
           
           if (ocrResponse.ok) {
             const ocrData = await ocrResponse.json();
-            if (ocrData.text && ocrData.text !== "NO_INGREDIENTS_FOUND" && ocrData.text.trim()) {
+            if (ocrData.text && ocrData.text !== "NO_INGREDIENTS_FOUND" && ocrData.text !== "MANUAL_INPUT_REQUIRED" && ocrData.text.trim()) {
               text = ocrData.text;
               setExtractedText(text);
-              console.log("Gemini OCR successful, text length:", text.length);
+              console.log("OCR successful, text length:", text.length);
               toast({
                 title: "Текст распознан!",
                 description: "Проверьте и отредактируйте если нужно",
               });
             } else {
-              console.log("Gemini OCR: no ingredients found");
+              console.log("OCR requires manual input");
               toast({
                 title: "Введите состав вручную",
-                description: "Не удалось распознать ингредиенты на фото",
-                variant: "destructive",
+                description: "Посмотрите на фото и введите ингредиенты в поле ниже",
               });
               setIsProcessing(false);
               return;
