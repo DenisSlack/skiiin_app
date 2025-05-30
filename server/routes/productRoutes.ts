@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { storage } from '../storage';
 import { insertProductSchema } from '@shared/schema';
-import { findProductImage } from '../perplexity';
+import { findProductImage, analyzeIngredientsWithPerplexity } from '../perplexity';
+import { scoreProduct } from '../scoring';
 
 const router = Router();
 
@@ -77,6 +78,33 @@ router.delete('/api/products/:id', async (req: any, res) => {
     res.json({ message: 'Product deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Failed to delete product' });
+  }
+});
+
+// Анализ продукта по ингредиентам
+router.post('/api/products/analyze', async (req: any, res) => {
+  try {
+    const { ingredients, skinProfile } = req.body;
+    if (!ingredients) {
+      return res.status(400).json({ message: 'Ingredients are required' });
+    }
+
+    // Анализ ингредиентов через Perplexity AI
+    const analysis = await analyzeIngredientsWithPerplexity(ingredients, skinProfile);
+    
+    // Добавляем оценку продукта
+    if (analysis.ingredients) {
+      const scoring = scoreProduct(analysis.ingredients, skinProfile);
+      analysis.scoring = scoring;
+    }
+
+    res.json(analysis);
+  } catch (error: any) {
+    console.error('Analysis error:', error);
+    res.status(500).json({ 
+      message: 'Failed to analyze product',
+      error: error.message 
+    });
   }
 });
 
