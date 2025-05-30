@@ -173,7 +173,12 @@ export class SupabaseStorage implements IStorage {
       const { data, error } = await supabase
         .from('users')
         .update({
-          ...profile,
+          gender: profile.gender,
+          age: profile.age,
+          skin_type: profile.skinType,
+          skin_concerns: profile.skinConcerns,
+          allergies: profile.allergies,
+          preferences: profile.preferences,
           profile_completed: true,
           updated_at: new Date().toISOString(),
         })

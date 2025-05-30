@@ -81,10 +81,10 @@ export default function Login({ onSuccess, onSwitchToSms }: LoginProps) {
         password: formData.password,
       });
     } else {
-      if (!formData.username.trim() || !formData.password.trim()) {
+      if (!formData.username.trim() || !formData.password.trim() || !formData.email.trim()) {
         toast({
           title: "Ошибка",
-          description: "Логин и пароль обязательны",
+          description: "Логин, пароль и email обязательны",
           variant: "destructive",
         });
         return;
@@ -157,13 +157,14 @@ export default function Login({ onSuccess, onSwitchToSms }: LoginProps) {
             {mode === 'register' && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email (необязательно)</Label>
+                  <Label htmlFor="email">Email*</Label>
                   <Input
                     id="email"
                     type="email"
                     placeholder="ваш@email.com"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
+                    required
                   />
                 </div>
 
