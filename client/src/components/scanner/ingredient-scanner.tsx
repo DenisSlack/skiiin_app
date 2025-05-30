@@ -219,8 +219,11 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
 
       const data = await response.json();
       
+      console.log("API response:", data);
+      
       // Check if we have valid ingredients data
       if (!data.ingredients || data.ingredients.trim().length === 0) {
+        console.log("No ingredients found in response:", data);
         toast({
           title: "Состав не найден",
           description: data.message || "Не удалось найти состав продукта. Попробуйте ввести его вручную.",
