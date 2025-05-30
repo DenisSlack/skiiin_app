@@ -18,21 +18,23 @@ export async function sendSMSCode({ phone, code }: SendSMSParams): Promise<boole
 
     const message = `Ваш код для входа в Skiiin IQ: ${code}. Код действителен 10 минут.`;
     
-    // Try different authentication method - using form data instead of basic auth
-    const formData = new URLSearchParams({
-      user: process.env.SMSAERO_EMAIL,
-      password: process.env.SMSAERO_API_KEY,
-      to: phone,
-      text: message,
-      from: 'SMS Aero'
+    // Try with URL parameters according to SMS Aero documentation
+    const url = new URL('https://gate.smsaero.ru/v2/sms/send');
+    url.searchParams.append('user', process.env.SMSAERO_EMAIL);
+    url.searchParams.append('password', process.env.SMSAERO_API_KEY);
+    url.searchParams.append('to', phone);
+    url.searchParams.append('text', message);
+    url.searchParams.append('from', 'SMS Aero');
+    
+    console.log("Attempting SMS send with credentials:", {
+      email: process.env.SMSAERO_EMAIL,
+      apiKeyLength: process.env.SMSAERO_API_KEY?.length,
+      phone,
+      url: url.toString().replace(process.env.SMSAERO_API_KEY || '', '***')
     });
     
-    const response = await fetch('https://gate.smsaero.ru/v2/sms/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: formData.toString(),
+    const response = await fetch(url.toString(), {
+      method: 'GET',
     });
 
     const result: SMSAeroResponse = await response.json();
