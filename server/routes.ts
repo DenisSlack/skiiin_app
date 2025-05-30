@@ -7,6 +7,18 @@ import { scoreProduct } from "./scoring";
 import { insertProductSchema, insertAnalysisSchema, updateSkinProfileSchema, loginSchema, registerSchema } from "@shared/schema";
 import { z } from "zod";
 
+// Simple session authentication middleware
+const requireAuth = async (req: any, res: any, next: any) => {
+  if (req.session?.userId) {
+    const user = await storage.getUser(req.session.userId);
+    if (user) {
+      req.user = user;
+      return next();
+    }
+  }
+  return res.status(401).json({ message: "Unauthorized" });
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
@@ -117,11 +129,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/auth/user', requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
+      res.json(req.user);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
@@ -129,9 +139,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Skin profile routes
-  app.put('/api/profile/skin', isAuthenticated, async (req: any, res) => {
+  app.put('/api/profile/skin', requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const profileData = updateSkinProfileSchema.parse(req.body);
       
       const updatedUser = await storage.updateSkinProfile(userId, profileData);
@@ -143,9 +153,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Product routes
-  app.post('/api/products', isAuthenticated, async (req: any, res) => {
+  app.post('/api/products', requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       
       // Поиск изображения продукта
       let imageUrl = "";
@@ -169,9 +179,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/products', isAuthenticated, async (req: any, res) => {
+  app.get('/api/products', requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const products = await storage.getUserProducts(userId);
       res.json(products);
     } catch (error) {
@@ -180,7 +190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/products/:id', isAuthenticated, async (req: any, res) => {
+  app.get('/api/products/:id', requireAuth, async (req: any, res) => {
     try {
       const productId = parseInt(req.params.id);
       const product = await storage.getProduct(productId);
@@ -190,7 +200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if user owns this product
-      if (product.userId !== req.user.claims.sub) {
+      if (product.userId !== req.user.id) {
         return res.status(403).json({ message: "Access denied" });
       }
       
@@ -201,9 +211,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/products/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/products/:id', requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const productId = parseInt(req.params.id);
       
       await storage.deleteProduct(productId, userId);
@@ -215,9 +225,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Analysis routes
-  app.post('/api/analysis', isAuthenticated, async (req: any, res) => {
+  app.post('/api/analysis', requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { productId, ingredientList } = req.body;
 
       // Get user's skin profile for personalized analysis
@@ -298,9 +308,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/analysis/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/analysis/user', requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const analyses = await storage.getUserAnalyses(userId);
       res.json(analyses);
     } catch (error) {
@@ -310,7 +320,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Personal recommendation based on skin profile
-  app.post("/api/analysis/personal-recommendation", isAuthenticated, async (req: any, res) => {
+  app.post("/api/analysis/personal-recommendation", requireAuth, async (req: any, res) => {
     try {
       const { productName, ingredients, skinProfile } = req.body;
       
@@ -368,7 +378,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User reviews from internet
-  app.post("/api/analysis/user-reviews", isAuthenticated, async (req: any, res) => {
+  app.post("/api/analysis/user-reviews", requireAuth, async (req: any, res) => {
     try {
       const { productName } = req.body;
       
@@ -441,7 +451,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Поиск ингредиентов по названию продукта
-  app.post('/api/find-ingredients', isAuthenticated, async (req: any, res) => {
+  app.post('/api/find-ingredients', requireAuth, async (req: any, res) => {
     try {
       const { productName } = req.body;
       
@@ -458,7 +468,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Alternative endpoint path for product ingredient search
-  app.post('/api/products/find-ingredients', isAuthenticated, async (req: any, res) => {
+  app.post('/api/products/find-ingredients', requireAuth, async (req: any, res) => {
     try {
       const { productName } = req.body;
       
@@ -496,7 +506,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Complete product image analysis endpoint
-  app.post("/api/analyze-product-image", isAuthenticated, async (req, res) => {
+  app.post("/api/analyze-product-image", requireAuth, async (req, res) => {
     try {
       console.log("Starting product image analysis...");
       const { imageData } = req.body;
@@ -566,7 +576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Gemini Vision OCR text extraction endpoint
-  app.post("/api/extract-text", isAuthenticated, async (req, res) => {
+  app.post("/api/extract-text", requireAuth, async (req, res) => {
     try {
       console.log("Starting Gemini Vision OCR extraction...");
       const { imageData } = req.body;
@@ -616,7 +626,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // OCR and ingredient extraction
-  app.post('/api/extract-ingredients', isAuthenticated, async (req: any, res) => {
+  app.post('/api/extract-ingredients', requireAuth, async (req: any, res) => {
     try {
       console.log("Starting ingredient extraction...");
       const { text } = req.body;
@@ -642,7 +652,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Server-side OCR processing
-  app.post('/api/ocr-extract', isAuthenticated, async (req: any, res) => {
+  app.post('/api/ocr-extract', requireAuth, async (req: any, res) => {
     try {
       const { image } = req.body;
       
@@ -668,7 +678,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Extract product name from text
-  app.post('/api/extract-product-name', isAuthenticated, async (req: any, res) => {
+  app.post('/api/extract-product-name', requireAuth, async (req: any, res) => {
     try {
       const { text } = req.body;
       
@@ -729,9 +739,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Recommendations
-  app.get('/api/recommendations', isAuthenticated, async (req: any, res) => {
+  app.get('/api/recommendations', requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
       
       if (!user?.skinType) {
@@ -763,7 +773,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Enhanced ingredient research endpoint
-  app.post('/api/ingredient-research', isAuthenticated, async (req: any, res) => {
+  app.post('/api/ingredient-research', requireAuth, async (req: any, res) => {
     try {
       const { ingredientName, skinType } = req.body;
       
@@ -784,9 +794,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Stats endpoint
-  app.get('/api/stats', isAuthenticated, async (req: any, res) => {
+  app.get('/api/stats', requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const products = await storage.getUserProducts(userId);
       const analyses = await storage.getUserAnalyses(userId);
       
