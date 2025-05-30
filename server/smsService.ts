@@ -18,23 +18,35 @@ export async function sendSMSCode({ phone, code }: SendSMSParams): Promise<boole
 
     const message = `Ваш код для входа в Skiiin IQ: ${code}. Код действителен 10 минут.`;
     
-    // Try with URL parameters according to SMS Aero documentation
-    const url = new URL('https://gate.smsaero.ru/v2/sms/send');
-    url.searchParams.append('user', process.env.SMSAERO_EMAIL);
-    url.searchParams.append('password', process.env.SMSAERO_API_KEY);
-    url.searchParams.append('to', phone);
-    url.searchParams.append('text', message);
-    url.searchParams.append('from', 'SMS Aero');
+    // Format phone number - remove all non-digits and add country code if needed
+    let formattedPhone = phone.replace(/\D/g, '');
+    if (formattedPhone.startsWith('8')) {
+      formattedPhone = '7' + formattedPhone.slice(1);
+    }
+    if (!formattedPhone.startsWith('7')) {
+      formattedPhone = '7' + formattedPhone;
+    }
     
-    console.log("Attempting SMS send with credentials:", {
+    // According to SMS Aero documentation - use Basic Auth with JSON POST
+    const credentials = Buffer.from(`${process.env.SMSAERO_EMAIL}:${process.env.SMSAERO_API_KEY}`).toString('base64');
+    
+    console.log("Attempting SMS send:", {
       email: process.env.SMSAERO_EMAIL,
-      apiKeyLength: process.env.SMSAERO_API_KEY?.length,
-      phone,
-      url: url.toString().replace(process.env.SMSAERO_API_KEY || '', '***')
+      phone: formattedPhone,
+      apiKeyPrefix: process.env.SMSAERO_API_KEY?.slice(0, 4) + '...'
     });
     
-    const response = await fetch(url.toString(), {
-      method: 'GET',
+    const response = await fetch('https://gate.smsaero.ru/v2/sms/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        number: formattedPhone,
+        text: message,
+        sign: 'SMS Aero'
+      }),
     });
 
     const result: SMSAeroResponse = await response.json();
@@ -45,8 +57,13 @@ export async function sendSMSCode({ phone, code }: SendSMSParams): Promise<boole
       result
     });
     
-    if (!response.ok || !result.success) {
-      console.error("SMS Aero API error:", result.message || result || "Unknown error");
+    if (!response.ok) {
+      console.error("SMS Aero API error:", result?.message || `HTTP ${response.status}`);
+      return false;
+    }
+
+    if (!result.success) {
+      console.error("SMS Aero API error:", result.message || "Unknown error");
       return false;
     }
 
