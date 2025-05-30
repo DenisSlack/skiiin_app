@@ -94,7 +94,7 @@ export default function AdminDashboard() {
   const updateUserMutation = useMutation({
     mutationFn: async (userData: any) => {
       const response = await fetch(`/api/admin/users/${userData.id}`, {
-        method: "PATCH",
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
@@ -367,6 +367,122 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit User Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Редактировать пользователя</DialogTitle>
+            <DialogDescription>
+              Измените данные пользователя
+            </DialogDescription>
+          </DialogHeader>
+          
+          {editingUser && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="username">Имя пользователя</Label>
+                  <Input
+                    id="username"
+                    value={editingUser.username || ''}
+                    onChange={(e) => setEditingUser({...editingUser, username: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={editingUser.email || ''}
+                    onChange={(e) => setEditingUser({...editingUser, email: e.target.value})}
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="first_name">Имя</Label>
+                  <Input
+                    id="first_name"
+                    value={editingUser.first_name || ''}
+                    onChange={(e) => setEditingUser({...editingUser, first_name: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="last_name">Фамилия</Label>
+                  <Input
+                    id="last_name"
+                    value={editingUser.last_name || ''}
+                    onChange={(e) => setEditingUser({...editingUser, last_name: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="gender">Пол</Label>
+                  <Select 
+                    value={editingUser.gender || ''} 
+                    onValueChange={(value) => setEditingUser({...editingUser, gender: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Выберите пол" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Мужской</SelectItem>
+                      <SelectItem value="female">Женский</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="age">Возраст</Label>
+                  <Input
+                    id="age"
+                    type="number"
+                    value={editingUser.age || ''}
+                    onChange={(e) => setEditingUser({...editingUser, age: parseInt(e.target.value) || null})}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="skin_type">Тип кожи</Label>
+                <Select 
+                  value={editingUser.skin_type || ''} 
+                  onValueChange={(value) => setEditingUser({...editingUser, skin_type: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите тип кожи" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="dry">Сухая</SelectItem>
+                    <SelectItem value="oily">Жирная</SelectItem>
+                    <SelectItem value="combination">Комбинированная</SelectItem>
+                    <SelectItem value="sensitive">Чувствительная</SelectItem>
+                    <SelectItem value="normal">Нормальная</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsEditDialogOpen(false)}
+                >
+                  Отмена
+                </Button>
+                <Button 
+                  onClick={handleSaveUser}
+                  disabled={updateUserMutation.isPending}
+                >
+                  {updateUserMutation.isPending ? 'Сохранение...' : 'Сохранить'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
