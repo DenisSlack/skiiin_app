@@ -19,7 +19,8 @@ router.post('/api/products/find-ingredients', async (req, res) => {
       });
     }
     const ingredientCount = ingredients.split(',').length;
-    if (ingredientCount < 3 || ingredients.length < 20) {
+    // Убираем слишком строгую валидацию - если найдены ингредиенты, возвращаем их
+    if (ingredientCount < 2) {
       return res.json({ 
         ingredients: '',
         message: `Найден неполный состав продукта (${ingredientCount} ингредиентов). Для точного анализа рекомендуем отсканировать полный список с упаковки.`,
