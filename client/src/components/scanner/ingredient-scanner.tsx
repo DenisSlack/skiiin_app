@@ -232,8 +232,21 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
         description: "Обрабатываем найденный состав продукта...",
       });
 
-      const result = await extractIngredientsMutation.mutateAsync(data.ingredients);
-      onResult?.(data.ingredients, result.ingredients, undefined, productName.trim());
+      // Extract ingredients from the found text
+      const extractResponse = await fetch('/api/extract-ingredients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ text: data.ingredients })
+      });
+      
+      if (extractResponse.ok) {
+        const extractData = await extractResponse.json();
+        onResult?.(data.ingredients, extractData.ingredients, undefined, productName.trim());
+      } else {
+        // If extraction fails, still pass the raw ingredients
+        onResult?.(data.ingredients, data.ingredients.split(',').map(i => i.trim()), undefined, productName.trim());
+      }
     } catch (error) {
       console.error("Error searching product:", error);
       toast({
