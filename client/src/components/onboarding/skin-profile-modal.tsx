@@ -211,7 +211,7 @@ export default function SkinProfileModal({ isOpen, onClose }: SkinProfileModalPr
               </>
             )}
 
-            {currentStep === 2 && (
+            {currentStep === 4 && (
               <>
                 <div>
                   <h4 className="font-semibold mb-2">Какие у вас основные проблемы с кожей?</h4>
@@ -241,7 +241,7 @@ export default function SkinProfileModal({ isOpen, onClose }: SkinProfileModalPr
               </>
             )}
 
-            {currentStep === 3 && (
+            {currentStep === 5 && (
               <>
                 <div>
                   <h4 className="font-semibold mb-2">Есть ли у вас известные аллергии?</h4>
@@ -271,7 +271,7 @@ export default function SkinProfileModal({ isOpen, onClose }: SkinProfileModalPr
               </>
             )}
 
-            {currentStep === 4 && (
+            {currentStep === 6 && (
               <>
                 <div>
                   <h4 className="font-semibold mb-2">Какие у вас предпочтения к продуктам?</h4>

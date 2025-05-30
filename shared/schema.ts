@@ -38,6 +38,9 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  // Personal data
+  gender: varchar("gender"), // male, female
+  age: integer("age"),
   // Skin profile data
   skinType: varchar("skin_type"), // oily, dry, combination, sensitive, normal
   skinConcerns: jsonb("skin_concerns"), // array of concerns like acne, aging, sensitivity
