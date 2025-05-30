@@ -84,16 +84,20 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
       console.log("Setting isProcessing to true");
       setIsProcessing(true);
 
-      // Try OCR with Gemini Vision API
+      // Try OCR with Vision API
       let text = extractedText;
       if (!text && capturedImage) {
-        console.log("Attempting Gemini OCR extraction...");
+        console.log("Attempting OCR extraction...");
+        console.log("capturedImage exists:", !!capturedImage);
+        console.log("capturedImage length:", capturedImage?.length);
         try {
+          console.log("Sending OCR request...");
           const ocrResponse = await fetch('/api/extract-text', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ imageData: capturedImage })
           });
+          console.log("OCR response status:", ocrResponse.status);
           
           if (ocrResponse.ok) {
             const ocrData = await ocrResponse.json();
