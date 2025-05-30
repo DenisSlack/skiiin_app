@@ -43,7 +43,7 @@ export default function OnboardingModal({ isOpen, onClose, onStartProfile }: Onb
             <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
               <Save className="text-primary" />
               <div>
-                <p className="text-sm font-medium">Создайте библиотеку</p>
+                <p className="text-sm font-medium">Создайте историю</p>
                 <p className="text-xs text-gray-600">Сохраняйте и отслеживайте ваши косметические продукты</p>
               </div>
             </div>
