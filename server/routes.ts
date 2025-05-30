@@ -749,13 +749,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Alternative endpoint path for product ingredient search
   app.post('/api/products/find-ingredients', async (req: any, res) => {
     try {
+      console.log("Find ingredients request received:", req.body);
       const { productName } = req.body;
       
       if (!productName) {
+        console.log("No product name provided");
         return res.status(400).json({ message: "Product name is required" });
       }
 
+      console.log("Searching ingredients for:", productName);
       const ingredients = await findProductIngredients(productName);
+      console.log("Found ingredients:", ingredients);
       
       // Если состав не найден или неполный, предлагаем пользователю сканирование
       if (!ingredients || ingredients.length === 0) {
