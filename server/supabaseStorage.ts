@@ -102,6 +102,8 @@ export class SupabaseStorage implements IStorage {
           username: userData.username,
           password: userData.password,
           email: userData.email,
+          first_name: userData.firstName,
+          last_name: userData.lastName,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -170,18 +172,22 @@ export class SupabaseStorage implements IStorage {
 
   async updateSkinProfile(userId: string, profile: UpdateSkinProfile): Promise<User> {
     try {
+      const updateData: any = {
+        profile_completed: true,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Add fields if they exist in profile
+      if (profile.gender) updateData.gender = profile.gender;
+      if (profile.age) updateData.age = profile.age;
+      if (profile.skinType) updateData.skin_type = profile.skinType;
+      if (profile.skinConcerns) updateData.skin_concerns = profile.skinConcerns;
+      if (profile.allergies) updateData.allergies = profile.allergies;
+      if (profile.preferences) updateData.preferences = profile.preferences;
+
       const { data, error } = await supabase
         .from('users')
-        .update({
-          gender: profile.gender,
-          age: profile.age,
-          skin_type: profile.skinType,
-          skin_concerns: profile.skinConcerns,
-          allergies: profile.allergies,
-          preferences: profile.preferences,
-          profile_completed: true,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', userId)
         .select()
         .single();

@@ -140,6 +140,8 @@ export const insertIngredientSchema = createInsertSchema(ingredients).omit({
 });
 
 export const updateSkinProfileSchema = z.object({
+  gender: z.enum(["male", "female"]).optional(),
+  age: z.number().min(13).max(80).optional(),
   skinType: z.enum(["oily", "dry", "combination", "sensitive", "normal"]).optional(),
   skinConcerns: z.array(z.string()).optional(),
   allergies: z.array(z.string()).optional(),
