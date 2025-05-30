@@ -393,14 +393,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Gemini OCR text extraction endpoint
   app.post("/api/extract-text", isAuthenticated, async (req, res) => {
     try {
+      console.log("Starting Gemini OCR extraction...");
       const { imageData } = req.body;
       
       if (!imageData) {
+        console.log("No image data provided");
         return res.status(400).json({ message: "Image data is required" });
       }
 
+      console.log("Image data length:", imageData.length);
+      
       // Extract text using Gemini Vision API
       const base64Image = imageData.replace(/^data:image\/[a-z]+;base64,/, '');
+      console.log("Base64 image length after cleanup:", base64Image.length);
       
       const { GoogleGenerativeAI } = require('@google/generative-ai');
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -415,6 +420,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         Return the ingredients exactly as written, including any punctuation.
       `;
 
+      console.log("Sending request to Gemini...");
       const result = await model.generateContent([
         prompt,
         {
@@ -427,11 +433,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const extractedText = result.response.text();
       console.log("Gemini OCR result:", extractedText);
+      console.log("Gemini OCR successful, sending response");
       
       res.json({ text: extractedText });
     } catch (error) {
       console.error("Gemini OCR error:", error);
-      res.status(500).json({ message: "Failed to extract text from image" });
+      console.error("Error details:", error.message);
+      res.status(500).json({ message: "Failed to extract text from image", error: error.message });
     }
   });
 
