@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,12 +23,21 @@ export default function Login({ onSuccess, onSwitchToSms }: LoginProps) {
     lastName: '',
   });
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
       return await apiRequest("/api/auth/login", "POST", credentials);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Save token if provided
+      if (data.token) {
+        localStorage.setItem('auth_token', data.token);
+      }
+      
+      // Invalidate auth queries to refresh user state
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      
       toast({
         title: "Добро пожаловать!",
         description: "Вход выполнен успешно",
