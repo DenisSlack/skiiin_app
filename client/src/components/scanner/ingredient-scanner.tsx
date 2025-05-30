@@ -84,16 +84,50 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
       console.log("Setting isProcessing to true");
       setIsProcessing(true);
 
-      // Skip OCR for now and prompt for manual input
+      // Try OCR with Gemini Vision API
       let text = extractedText;
       if (!text && capturedImage) {
-        console.log("Photo captured, prompting for manual input");
-        toast({
-          title: "Введите состав",
-          description: "Посмотрите на фото и введите ингредиенты в поле ниже",
-        });
-        setIsProcessing(false);
-        return;
+        console.log("Attempting Gemini OCR extraction...");
+        try {
+          const ocrResponse = await fetch('/api/extract-text', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageData: capturedImage })
+          });
+          
+          if (ocrResponse.ok) {
+            const ocrData = await ocrResponse.json();
+            if (ocrData.text && ocrData.text !== "NO_INGREDIENTS_FOUND" && ocrData.text.trim()) {
+              text = ocrData.text;
+              setExtractedText(text);
+              console.log("Gemini OCR successful, text length:", text.length);
+              toast({
+                title: "Текст распознан!",
+                description: "Проверьте и отредактируйте если нужно",
+              });
+            } else {
+              console.log("Gemini OCR: no ingredients found");
+              toast({
+                title: "Введите состав вручную",
+                description: "Не удалось распознать ингредиенты на фото",
+                variant: "destructive",
+              });
+              setIsProcessing(false);
+              return;
+            }
+          } else {
+            throw new Error('OCR request failed');
+          }
+        } catch (ocrError) {
+          console.error("Gemini OCR failed:", ocrError);
+          toast({
+            title: "Введите состав вручную",
+            description: "Автоматическое распознавание не удалось",
+            variant: "destructive",
+          });
+          setIsProcessing(false);
+          return;
+        }
       }
 
       if (!text.trim()) {

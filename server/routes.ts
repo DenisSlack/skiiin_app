@@ -390,6 +390,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Gemini OCR text extraction endpoint
+  app.post("/api/extract-text", isAuthenticated, async (req, res) => {
+    try {
+      const { imageData } = req.body;
+      
+      if (!imageData) {
+        return res.status(400).json({ message: "Image data is required" });
+      }
+
+      // Extract text using Gemini Vision API
+      const base64Image = imageData.replace(/^data:image\/[a-z]+;base64,/, '');
+      
+      const { GoogleGenerativeAI } = require('@google/generative-ai');
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+      const prompt = `
+        Analyze this image and extract ONLY the ingredients list from cosmetic product packaging.
+        Look for text that contains ingredient names (like "Aqua", "Glycerin", "Niacinamide", etc.).
+        Return ONLY the ingredients as they appear on the package, preserving the exact text.
+        If you can't find clear ingredients, return "NO_INGREDIENTS_FOUND".
+        Focus on the INCI names (international ingredient names) which are usually in English.
+        Return the ingredients exactly as written, including any punctuation.
+      `;
+
+      const result = await model.generateContent([
+        prompt,
+        {
+          inlineData: {
+            data: base64Image,
+            mimeType: "image/jpeg"
+          }
+        }
+      ]);
+
+      const extractedText = result.response.text();
+      console.log("Gemini OCR result:", extractedText);
+      
+      res.json({ text: extractedText });
+    } catch (error) {
+      console.error("Gemini OCR error:", error);
+      res.status(500).json({ message: "Failed to extract text from image" });
+    }
+  });
+
   // OCR and ingredient extraction
   app.post('/api/extract-ingredients', isAuthenticated, async (req: any, res) => {
     try {
