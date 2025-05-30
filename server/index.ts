@@ -6,6 +6,9 @@ const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 
+// Set trust proxy for session cookies to work properly
+app.set("trust proxy", 1);
+
 // Configure CSP to allow OCR libraries and WebAssembly
 app.use((req, res, next) => {
   res.setHeader(

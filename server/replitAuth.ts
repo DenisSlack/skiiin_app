@@ -69,7 +69,7 @@ async function upsertUser(
 }
 
 export async function setupAuth(app: Express) {
-  app.set("trust proxy", 1);
+  // Trust proxy already set in main index.ts
   app.use(getSession());
   app.use(passport.initialize());
   app.use(passport.session());
