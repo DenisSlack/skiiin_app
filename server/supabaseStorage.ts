@@ -189,6 +189,8 @@ export class SupabaseStorage implements IStorage {
 
   async updateSkinProfile(userId: string, profile: UpdateSkinProfile): Promise<User> {
     try {
+      console.log('updateSkinProfile called with:', { userId, profile });
+      
       const updateData: any = {
         profile_completed: true,
         updated_at: new Date().toISOString(),
@@ -202,6 +204,8 @@ export class SupabaseStorage implements IStorage {
       if (profile.allergies) updateData.allergies = profile.allergies;
       if (profile.preferences) updateData.preferences = profile.preferences;
 
+      console.log('Update data being sent to Supabase:', updateData);
+
       const { data, error } = await supabase
         .from('users')
         .update(updateData)
@@ -210,9 +214,11 @@ export class SupabaseStorage implements IStorage {
         .single();
 
       if (error) {
+        console.error('Supabase update error:', error);
         handleSupabaseError(error);
       }
 
+      console.log('Update successful, returned data:', data);
       return data;
     } catch (error) {
       console.error('Error updating skin profile:', error);

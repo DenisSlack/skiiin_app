@@ -154,7 +154,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(products)
       .where(eq(products.userId, userId))
-      .orderBy(desc(products.scannedAt));
+      .orderBy(desc(products.createdAt));
   }
 
   async getProduct(id: number): Promise<Product | undefined> {

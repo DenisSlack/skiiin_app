@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS products (
 CREATE TABLE IF NOT EXISTS analyses (
   id SERIAL PRIMARY KEY,
   product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   compatibility_score INTEGER NOT NULL,
   compatibility_rating VARCHAR NOT NULL,
   analysis_data JSONB NOT NULL,

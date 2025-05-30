@@ -66,6 +66,7 @@ export const products = pgTable("products", {
 export const analyses = pgTable("analyses", {
   id: serial("id").primaryKey(),
   productId: integer("product_id").notNull().references(() => products.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   compatibilityScore: integer("compatibility_score").notNull(),
   compatibilityRating: varchar("compatibility_rating").notNull(),
   analysisData: jsonb("analysis_data").notNull(),
