@@ -518,6 +518,7 @@ export class SupabaseStorage implements IStorage {
   async createTelegramCode(telegramCode: InsertTelegramCode): Promise<TelegramCode> {
     try {
       const mappedData = mapTelegramCodeToSupabase(telegramCode);
+      console.log('Creating telegram code with data:', mappedData);
       
       const { data, error } = await supabase
         .from('telegram_codes')
@@ -526,6 +527,8 @@ export class SupabaseStorage implements IStorage {
         .single();
 
       if (error) {
+        console.error('Supabase telegram_codes insert error:', error);
+        console.error('Data being inserted:', mappedData);
         handleSupabaseError(error);
       }
 
