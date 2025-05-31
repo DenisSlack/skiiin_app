@@ -7,6 +7,7 @@ import { scoreProduct } from "./scoring";
 import { insertProductSchema, insertAnalysisSchema, updateSkinProfileSchema, loginSchema, registerSchema, smsLoginSchema, smsVerifySchema, telegramLoginSchema, telegramVerifySchema } from "@shared/schema";
 import { sendSMSCode, generateSMSCode } from "./smsService";
 import { sendTelegramCode, generateTelegramCode, checkTelegramCodeStatus } from "./telegramService";
+import { memoryCodeStorage } from "./memoryCodeStorage";
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -347,9 +348,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // TODO: Save code to database (table telegram_codes needs to be created)
-      // Temporarily skip database save until telegram_codes table is created
-      console.log(`Telegram code ${code} sent to ${phone}, message ID: ${telegramResult.messageId}`);
+      // Save code to memory storage (one-time use)
+      memoryCodeStorage.saveTelegramCode(phone, code, telegramResult.messageId);
 
       res.json({ 
         message: "Код отправлен в Telegram",
@@ -373,16 +373,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { phone, code } = result.data;
 
-      // Verify Telegram code
-      const telegramCode = await storage.getValidTelegramCode(phone, code);
-      if (!telegramCode) {
+      // Verify Telegram code from memory storage
+      const isValidCode = memoryCodeStorage.verifyTelegramCode(phone, code);
+      if (!isValidCode) {
         return res.status(400).json({ 
           message: "Неверный или истекший код" 
         });
       }
-
-      // Mark code as verified
-      await storage.markTelegramCodeAsVerified(telegramCode.id);
 
       // Find or create user
       let user = await storage.getUserByPhone(phone);
