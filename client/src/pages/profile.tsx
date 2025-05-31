@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { User, Edit, LogOut, Settings, HelpCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { useLogout } from "@/hooks/useLogout";
 
 export default function Profile() {
   const [showSkinProfile, setShowSkinProfile] = useState(false);
   const queryClient = useQueryClient();
+  const logoutMutation = useLogout();
 
   const { data: user, isLoading } = useQuery({
     queryKey: ["/api/auth/user"],
@@ -22,7 +24,7 @@ export default function Profile() {
   });
 
   const handleLogout = () => {
-    window.location.href = "/api/logout";
+    logoutMutation.mutate();
   };
 
   const getSkinTypeDisplay = (skinType: string) => {
