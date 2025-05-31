@@ -347,14 +347,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Save code to database
-      await storage.createTelegramCode({
-        phone,
-        code,
-        messageId: telegramResult.messageId,
-        status: 0,
-        expiresAt,
-      });
+      // TODO: Save code to database (table telegram_codes needs to be created)
+      // Temporarily skip database save until telegram_codes table is created
+      console.log(`Telegram code ${code} sent to ${phone}, message ID: ${telegramResult.messageId}`);
 
       res.json({ 
         message: "Код отправлен в Telegram",
