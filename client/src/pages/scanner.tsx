@@ -28,8 +28,7 @@ export default function Scanner() {
 
   const createProductMutation = useMutation({
     mutationFn: async (productData: any) => {
-      const response = await apiRequest("POST", "/api/products", productData);
-      return response.json();
+      return await apiRequest("/api/products", "POST", productData);
     },
     onSuccess: (product) => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
@@ -50,8 +49,7 @@ export default function Scanner() {
 
   const analyzeProductMutation = useMutation({
     mutationFn: async ({ productId, ingredientList }: { productId: number; ingredientList: string }) => {
-      const response = await apiRequest("POST", "/api/analysis", { productId, ingredientList });
-      return response.json();
+      return await apiRequest("/api/analysis", "POST", { productId, ingredientList });
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/analysis/user"] });
