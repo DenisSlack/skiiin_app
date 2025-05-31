@@ -4,8 +4,9 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { analyzeIngredientsWithPerplexity, findProductIngredients, generatePartnerRecommendations, extractIngredientsFromText, findProductImage, getPersonalizedRecommendation } from "./perplexity";
 import { scoreProduct } from "./scoring";
-import { insertProductSchema, insertAnalysisSchema, updateSkinProfileSchema, loginSchema, registerSchema, smsLoginSchema, smsVerifySchema } from "@shared/schema";
+import { insertProductSchema, insertAnalysisSchema, updateSkinProfileSchema, loginSchema, registerSchema, smsLoginSchema, smsVerifySchema, telegramLoginSchema, telegramVerifySchema } from "@shared/schema";
 import { sendSMSCode, generateSMSCode } from "./smsService";
+import { sendTelegramCode, generateTelegramCode, checkTelegramCodeStatus } from "./telegramService";
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -315,6 +316,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error verifying SMS:", error);
       res.status(500).json({ message: "Ошибка верификации SMS" });
+    }
+  });
+
+  // Telegram authentication routes
+  app.post('/api/auth/telegram/send', async (req, res) => {
+    try {
+      const result = telegramLoginSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Некорректный номер телефона", 
+          errors: result.error.issues 
+        });
+      }
+
+      const { phone } = result.data;
+      const code = generateTelegramCode();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 минут
+
+      // Send code via Telegram through SMSAero
+      const telegramResult = await sendTelegramCode({ 
+        phone, 
+        code, 
+        fallbackSMS: true 
+      });
+
+      if (!telegramResult.success) {
+        return res.status(500).json({ 
+          message: telegramResult.error || "Не удалось отправить код в Telegram" 
+        });
+      }
+
+      // Save code to database
+      await storage.createTelegramCode({
+        phone,
+        code,
+        messageId: telegramResult.messageId,
+        status: 0,
+        expiresAt,
+      });
+
+      res.json({ 
+        message: "Код отправлен в Telegram",
+        messageId: telegramResult.messageId
+      });
+    } catch (error) {
+      console.error("Error sending Telegram code:", error);
+      res.status(500).json({ message: "Ошибка отправки кода в Telegram" });
+    }
+  });
+
+  app.post('/api/auth/telegram/verify', async (req, res) => {
+    try {
+      const result = telegramVerifySchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Некорректные данные", 
+          errors: result.error.issues 
+        });
+      }
+
+      const { phone, code } = result.data;
+
+      // Verify Telegram code
+      const telegramCode = await storage.getValidTelegramCode(phone, code);
+      if (!telegramCode) {
+        return res.status(400).json({ 
+          message: "Неверный или истекший код" 
+        });
+      }
+
+      // Mark code as verified
+      await storage.markTelegramCodeAsVerified(telegramCode.id);
+
+      // Find or create user
+      let user = await storage.getUserByPhone(phone);
+      if (!user) {
+        user = await storage.createUserWithPhone(phone);
+      }
+
+      // Create session
+      (req.session as any).userId = user.id;
+      (req.session as any).username = user.username;
+
+      // Temporary solution: provide a simple token
+      const tempToken = Buffer.from(`${user.id}:${Date.now()}`).toString('base64');
+
+      res.json({ 
+        user, 
+        message: "Вход через Telegram выполнен успешно",
+        token: tempToken
+      });
+    } catch (error) {
+      console.error("Error verifying Telegram code:", error);
+      res.status(500).json({ message: "Ошибка верификации кода Telegram" });
+    }
+  });
+
+  app.get('/api/auth/telegram/status/:messageId', async (req, res) => {
+    try {
+      const messageId = parseInt(req.params.messageId);
+      if (isNaN(messageId)) {
+        return res.status(400).json({ message: "Некорректный ID сообщения" });
+      }
+
+      const statusResult = await checkTelegramCodeStatus(messageId);
+      
+      if (!statusResult.success) {
+        return res.status(500).json({ 
+          message: statusResult.error || "Не удалось получить статус сообщения" 
+        });
+      }
+
+      res.json({
+        status: statusResult.status,
+        extendStatus: statusResult.extendStatus,
+        message: "Статус получен успешно"
+      });
+    } catch (error) {
+      console.error("Error checking Telegram status:", error);
+      res.status(500).json({ message: "Ошибка проверки статуса Telegram" });
     }
   });
 
