@@ -3,22 +3,16 @@ import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import AppHeader from "@/components/layout/app-header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
-import ImageUploadScanner from "@/components/scanner/image-upload-scanner";
+import ProductAnalyzer from "@/components/scanner/product-analyzer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Camera, ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Scan } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Scanner() {
   const [, setLocation] = useLocation();
-  const [showCamera, setShowCamera] = useState(false);
-  const [productName, setProductName] = useState("");
-  const [ingredients, setIngredients] = useState("");
-  const [productImage, setProductImage] = useState<string | null>(null);
+  const [showAnalyzer, setShowAnalyzer] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
