@@ -4,6 +4,7 @@ import {
   analyses,
   ingredients,
   smsCodes,
+  telegramCodes,
   type User,
   type UpsertUser,
   type Product,
@@ -17,6 +18,8 @@ import {
   type RegisterData,
   type InsertSmsCode,
   type SmsCode,
+  type InsertTelegramCode,
+  type TelegramCode,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, lt } from "drizzle-orm";
@@ -54,6 +57,13 @@ export interface IStorage {
   getValidSmsCode(phone: string, code: string): Promise<SmsCode | undefined>;
   markSmsCodeAsVerified(id: number): Promise<void>;
   cleanupExpiredSmsCodes(): Promise<void>;
+  
+  // Telegram code operations
+  createTelegramCode(telegramCode: InsertTelegramCode): Promise<TelegramCode>;
+  getValidTelegramCode(phone: string, code: string): Promise<TelegramCode | undefined>;
+  markTelegramCodeAsVerified(id: number): Promise<void>;
+  updateTelegramCodeStatus(id: number, status: number, extendStatus?: string): Promise<void>;
+  cleanupExpiredTelegramCodes(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
