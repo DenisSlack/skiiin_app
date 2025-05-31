@@ -1215,10 +1215,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Final ingredients for ${productName}:`, ingredients);
 
-      res.json({
+      const responseData = {
         ingredients: ingredients,
         found: true
-      });
+      };
+      
+      console.log(`Sending response for ${productName}:`, responseData);
+      res.json(responseData);
 
     } catch (error) {
       console.error("Error finding product ingredients:", error);
