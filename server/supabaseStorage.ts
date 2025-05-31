@@ -18,7 +18,9 @@ import type {
   UpdateSkinProfile,
   RegisterData,
   SmsCode,
-  InsertSmsCode
+  InsertSmsCode,
+  TelegramCode,
+  InsertTelegramCode
 } from '@shared/schema';
 import type { IStorage } from './storage';
 
@@ -541,6 +543,105 @@ export class SupabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error deleting ingredient:', error);
       throw error;
+    }
+  }
+
+  // Telegram code operations
+  async createTelegramCode(telegramCode: InsertTelegramCode): Promise<TelegramCode> {
+    try {
+      const { data, error } = await supabase
+        .from('telegram_codes')
+        .insert({
+          ...telegramCode,
+          created_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) {
+        handleSupabaseError(error);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error creating Telegram code:', error);
+      throw error;
+    }
+  }
+
+  async getValidTelegramCode(phone: string, code: string): Promise<TelegramCode | undefined> {
+    try {
+      const { data, error } = await supabase
+        .from('telegram_codes')
+        .select('*')
+        .eq('phone', phone)
+        .eq('code', code)
+        .eq('verified', false)
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        handleSupabaseError(error);
+      }
+
+      return data || undefined;
+    } catch (error) {
+      console.error('Error getting valid Telegram code:', error);
+      return undefined;
+    }
+  }
+
+  async markTelegramCodeAsVerified(id: number): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('telegram_codes')
+        .update({ verified: true })
+        .eq('id', id);
+
+      if (error) {
+        handleSupabaseError(error);
+      }
+    } catch (error) {
+      console.error('Error marking Telegram code as verified:', error);
+      throw error;
+    }
+  }
+
+  async updateTelegramCodeStatus(id: number, status: number, telegramMessageId?: number): Promise<void> {
+    try {
+      const updateData: any = { status };
+      if (telegramMessageId) {
+        updateData.telegram_message_id = telegramMessageId;
+      }
+
+      const { error } = await supabase
+        .from('telegram_codes')
+        .update(updateData)
+        .eq('id', id);
+
+      if (error) {
+        handleSupabaseError(error);
+      }
+    } catch (error) {
+      console.error('Error updating Telegram code status:', error);
+      throw error;
+    }
+  }
+
+  async cleanupExpiredTelegramCodes(): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('telegram_codes')
+        .delete()
+        .lt('expires_at', new Date().toISOString());
+
+      if (error) {
+        handleSupabaseError(error);
+      }
+    } catch (error) {
+      console.error('Error cleaning up expired Telegram codes:', error);
     }
   }
 }
