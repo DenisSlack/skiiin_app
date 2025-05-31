@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/landing";
 import Login from "@/pages/login";
 import Home from "@/pages/home";
-import Scanner from "@/pages/scanner-new";
+import Scanner from "@/pages/scanner";
 import Analysis from "@/pages/analysis";
 import Library from "@/pages/library";
 import Profile from "@/pages/profile";
