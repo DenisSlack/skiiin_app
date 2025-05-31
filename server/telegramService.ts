@@ -45,7 +45,8 @@ export async function sendTelegramCode({
     // Если включен fallback на SMS, добавляем параметры для SMS
     if (fallbackSMS) {
       params.append('text', `Ваш код подтверждения: ${code}`);
-      params.append('sign', 'SkiiinIQ');
+      // Убираем sign пока не зарегистрируем подпись в SMSAero
+      // params.append('sign', 'SkiiinIQ');
     }
 
     console.log(`Sending Telegram code to ${cleanPhone}`);
