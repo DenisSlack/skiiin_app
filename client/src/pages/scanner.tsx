@@ -126,7 +126,10 @@ export default function Scanner() {
   };
 
   const handleAnalyzeByUrl = async () => {
+    console.log('handleAnalyzeByUrl called with URL:', productUrl);
+    
     if (!productUrl.trim()) {
+      console.log('No URL provided');
       toast({
         title: "Ошибка",
         description: "Введите ссылку на товар",
@@ -135,6 +138,7 @@ export default function Scanner() {
       return;
     }
 
+    console.log('Starting URL analysis...');
     setIsAnalyzing(true);
 
     try {
