@@ -765,14 +765,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Продукт уже существует, просто сохраняем анализ
 
       // Save analysis
-      const analysisData = insertAnalysisSchema.parse({
+      const analysisData = {
         productId,
         userId,
-        insights: analysisResult.insights,
-        recommendations: analysisResult.insights.recommendations,
-        ingredientBreakdown: analysisResult.ingredients,
-        scoring: analysisResult.scoring,
-      });
+        compatibilityScore: analysisResult.compatibilityScore || 0,
+        compatibilityRating: analysisResult.compatibilityRating || 'unknown',
+        analysisData: analysisResult, // Save full analysis result as JSON
+      };
 
       const analysis = await storage.createAnalysis(analysisData);
       
