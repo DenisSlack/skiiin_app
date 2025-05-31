@@ -61,8 +61,12 @@ export async function sendTelegramCode({
       },
     });
 
+    console.log(`Response status: ${response.status}`);
+    
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      console.error(`API Error Response: ${errorText}`);
+      throw new Error(`HTTP error! status: ${response.status}, response: ${errorText}`);
     }
 
     const result: TelegramCodeResponse = await response.json();
