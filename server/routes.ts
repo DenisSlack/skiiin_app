@@ -707,6 +707,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get product details
       const product = await storage.getProduct(productId);
+      console.log("Analysis debug - Product:", product);
+      console.log("Analysis debug - UserId from request:", userId);
+      console.log("Analysis debug - Product userId:", product?.userId);
+      
       if (!product || product.userId !== userId) {
         return res.status(404).json({ message: "Product not found" });
       }
