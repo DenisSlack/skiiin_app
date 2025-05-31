@@ -85,10 +85,10 @@ export default function Scanner() {
       
       // If no ingredients provided, try to find them automatically
       if (!ingredients.trim()) {
-        const response = await apiRequest("POST", "/api/products/find-ingredients", {
-          productName: productName.trim()
+        const response = await apiRequest("/api/extract-ingredients", "POST", {
+          text: productName.trim()
         });
-        const data = await response.json();
+        const data = response;
         
         if (data.ingredients) {
           finalIngredients = data.ingredients;

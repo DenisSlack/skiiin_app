@@ -26,8 +26,7 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
 
   const extractIngredientsMutation = useMutation({
     mutationFn: async (text: string) => {
-      const response = await apiRequest("POST", "/api/extract-ingredients", { text });
-      return response.json();
+      return await apiRequest("/api/extract-ingredients", "POST", { text });
     },
   });
 
@@ -206,18 +205,9 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
         headers.Authorization = `Bearer ${token}`;
       }
 
-      const response = await fetch('/api/products/find-ingredients', {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({ productName: productName.trim() })
+      const data = await apiRequest('/api/extract-ingredients', 'POST', {
+        text: productName.trim()
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to find ingredients');
-      }
-
-      const data = await response.json();
       
       // Check if we have valid ingredients data
       if (!data.ingredients || data.ingredients.trim().length === 0) {
