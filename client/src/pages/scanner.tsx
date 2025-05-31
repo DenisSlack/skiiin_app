@@ -85,22 +85,31 @@ export default function Scanner() {
       
       // If no ingredients provided, try to find them automatically
       if (!ingredients.trim()) {
-        const response = await apiRequest("/api/extract-ingredients", "POST", {
-          text: productName.trim()
-        });
-        const data = response;
-        
-        if (data.ingredients) {
-          finalIngredients = data.ingredients;
-          setIngredients(data.ingredients);
-          toast({
-            title: "Состав найден автоматически",
-            description: "Анализируем найденный состав продукта.",
+        try {
+          const response = await apiRequest("/api/products/find-ingredients", "POST", {
+            productName: productName.trim()
           });
-        } else {
+          
+          if (response.found && response.ingredients) {
+            finalIngredients = response.ingredients;
+            setIngredients(response.ingredients);
+            toast({
+              title: "Состав найден автоматически",
+              description: "Анализируем найденный состав продукта.",
+            });
+          } else {
+            toast({
+              title: "Состав не найден",
+              description: "Введите состав продукта вручную для анализа.",
+              variant: "destructive",
+            });
+            setIsAnalyzing(false);
+            return;
+          }
+        } catch (error) {
           toast({
-            title: "Состав не найден",
-            description: "Введите состав продукта вручную для анализа.",
+            title: "Не удалось найти состав продукта",
+            description: "Попробуйте ввести его вручную.",
             variant: "destructive",
           });
           setIsAnalyzing(false);

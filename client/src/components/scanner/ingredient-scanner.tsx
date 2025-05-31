@@ -205,12 +205,12 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
         headers.Authorization = `Bearer ${token}`;
       }
 
-      const data = await apiRequest('/api/extract-ingredients', 'POST', {
-        text: productName.trim()
+      const data = await apiRequest('/api/products/find-ingredients', 'POST', {
+        productName: productName.trim()
       });
       
       // Check if we have valid ingredients data
-      if (!data.ingredients || data.ingredients.trim().length === 0) {
+      if (!data.found || !data.ingredients || data.ingredients.trim().length === 0) {
         toast({
           title: "Состав не найден",
           description: data.message || "Не удалось найти состав продукта. Попробуйте ввести его вручную.",

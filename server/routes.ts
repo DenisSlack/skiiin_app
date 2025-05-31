@@ -1132,6 +1132,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Find product ingredients by name
+  app.post('/api/products/find-ingredients', requireAuth, async (req: any, res) => {
+    try {
+      const { productName } = req.body;
+      
+      if (!productName || !productName.trim()) {
+        return res.status(400).json({ message: "Product name is required" });
+      }
+
+      console.log(`Searching ingredients for product: ${productName}`);
+
+      const prompt = `Find the complete INCI ingredient list for the cosmetic product: ${productName}
+
+      Please provide the full ingredient list in English (INCI names) as it appears on the product packaging.
+      
+      Respond in JSON format:
+      {
+        "ingredients": "complete comma-separated list of INCI ingredients in English",
+        "found": true/false
+      }
+      
+      If you cannot find the exact ingredient list, set "found" to false.`;
+
+      const response = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.1-sonar-small-128k-online',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert in cosmetic ingredients and INCI naming. Provide accurate ingredient lists for cosmetic products.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          max_tokens: 1000,
+          temperature: 0.2,
+          response_format: { type: 'json_object' }
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Perplexity API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices[0]?.message?.content;
+      
+      if (!content) {
+        throw new Error('No content received from search service');
+      }
+
+      let result;
+      try {
+        result = JSON.parse(content);
+      } catch (parseError) {
+        console.error('Failed to parse response:', content);
+        throw new Error('Invalid response format');
+      }
+
+      if (!result.found || !result.ingredients) {
+        return res.status(404).json({ 
+          message: "Ingredients not found for this product",
+          found: false
+        });
+      }
+
+      res.json({
+        ingredients: result.ingredients,
+        found: true
+      });
+
+    } catch (error) {
+      console.error("Error finding product ingredients:", error);
+      res.status(500).json({ 
+        message: "Failed to find product ingredients", 
+        error: (error as Error).message 
+      });
+    }
+  });
+
   // Server-side OCR processing
   app.post('/api/ocr-extract', requireAuth, async (req: any, res) => {
     try {
