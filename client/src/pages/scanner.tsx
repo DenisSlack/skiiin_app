@@ -86,18 +86,23 @@ export default function Scanner() {
       // If no ingredients provided, try to find them automatically
       if (!ingredients.trim()) {
         try {
+          console.log("Sending request to find ingredients for:", productName.trim());
           const response = await apiRequest("/api/products/find-ingredients", "POST", {
             productName: productName.trim()
           });
           
+          console.log("Received response:", response);
+          
           if (response.found && response.ingredients) {
             finalIngredients = response.ingredients;
             setIngredients(response.ingredients);
+            console.log("Ingredients found:", response.ingredients);
             toast({
               title: "Состав найден автоматически",
               description: "Анализируем найденный состав продукта.",
             });
           } else {
+            console.log("No ingredients found in response:", response);
             toast({
               title: "Состав не найден",
               description: "Введите состав продукта вручную для анализа.",
@@ -107,6 +112,7 @@ export default function Scanner() {
             return;
           }
         } catch (error) {
+          console.error("Error finding ingredients:", error);
           toast({
             title: "Не удалось найти состав продукта",
             description: "Попробуйте ввести его вручную.",
