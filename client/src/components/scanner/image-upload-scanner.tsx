@@ -38,8 +38,21 @@ export default function ImageUploadScanner({ onClose, onResult }: ImageUploadSca
   };
 
   const startCamera = async () => {
+    console.log('🎥 Starting camera...');
+    
     try {
       setCameraError(null);
+      
+      // Check if getUserMedia is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.error('❌ getUserMedia not supported');
+        setCameraError('Камера не поддерживается в этом браузере');
+        return;
+      }
+      
+      console.log('✅ getUserMedia is supported');
+      console.log('🔍 Requesting camera permissions...');
+      
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           facingMode: 'environment',
@@ -48,42 +61,111 @@ export default function ImageUploadScanner({ onClose, onResult }: ImageUploadSca
         } 
       });
       
+      console.log('✅ Camera stream obtained:', stream);
+      console.log('📹 Video tracks:', stream.getVideoTracks().length);
+      
       if (videoRef.current) {
+        console.log('📺 Setting video source...');
         videoRef.current.srcObject = stream;
         streamRef.current = stream;
+        
+        videoRef.current.onloadedmetadata = () => {
+          console.log('✅ Video metadata loaded');
+          console.log('📐 Video dimensions:', videoRef.current?.videoWidth, 'x', videoRef.current?.videoHeight);
+        };
+        
+        videoRef.current.onplay = () => {
+          console.log('▶️ Video started playing');
+        };
+        
         setShowCamera(true);
+        console.log('✅ Camera interface shown');
+      } else {
+        console.error('❌ Video ref is null');
+        setCameraError('Ошибка инициализации видео');
       }
     } catch (error) {
-      console.error('Camera error:', error);
-      setCameraError('Не удается получить доступ к камере. Проверьте разрешения.');
+      console.error('❌ Camera error:', error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      
+      let errorMessage = 'Не удается получить доступ к камере';
+      
+      if (error.name === 'NotAllowedError') {
+        errorMessage = 'Доступ к камере запрещен. Разрешите использование камеры в настройках браузера';
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = 'Камера не найдена. Убедитесь, что устройство имеет камеру';
+      } else if (error.name === 'NotSupportedError') {
+        errorMessage = 'Камера не поддерживается';
+      } else if (error.name === 'NotReadableError') {
+        errorMessage = 'Камера используется другим приложением';
+      }
+      
+      setCameraError(errorMessage);
     }
   };
 
   const stopCamera = () => {
+    console.log('🛑 Stopping camera...');
+    
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      console.log('📹 Stopping video tracks...');
+      streamRef.current.getTracks().forEach(track => {
+        console.log('⏹️ Stopping track:', track.kind, track.label);
+        track.stop();
+      });
       streamRef.current = null;
+      console.log('✅ Camera stream cleared');
     }
+    
     setShowCamera(false);
     setCameraError(null);
+    console.log('✅ Camera interface hidden');
   };
 
   const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const canvas = canvasRef.current;
-      const video = videoRef.current;
-      const context = canvas.getContext('2d');
-      
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      
-      if (context) {
-        context.drawImage(video, 0, 0);
-        const imageData = canvas.toDataURL('image/jpeg', 0.8);
-        setSelectedImage(imageData);
-        stopCamera();
-      }
+    console.log('📸 Capturing photo...');
+    
+    if (!videoRef.current) {
+      console.error('❌ Video ref is null');
+      return;
     }
+    
+    if (!canvasRef.current) {
+      console.error('❌ Canvas ref is null');
+      return;
+    }
+    
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    const context = canvas.getContext('2d');
+    
+    if (!context) {
+      console.error('❌ Cannot get canvas context');
+      return;
+    }
+    
+    console.log('📐 Video ready state:', video.readyState);
+    console.log('📐 Video dimensions:', video.videoWidth, 'x', video.videoHeight);
+    
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      console.error('❌ Video has no dimensions');
+      return;
+    }
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    console.log('🎨 Drawing video frame to canvas...');
+    context.drawImage(video, 0, 0);
+    
+    console.log('💾 Converting to data URL...');
+    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    console.log('✅ Image captured, size:', imageData.length, 'bytes');
+    
+    setSelectedImage(imageData);
+    stopCamera();
+    console.log('✅ Photo capture complete');
   };
 
   useEffect(() => {
@@ -212,7 +294,10 @@ export default function ImageUploadScanner({ onClose, onResult }: ImageUploadSca
             
             <div className="flex space-x-4">
               <Button 
-                onClick={startCamera}
+                onClick={() => {
+                  console.log('👆 Camera button clicked');
+                  startCamera();
+                }}
                 size="lg" 
                 className="gap-2 bg-white text-black hover:bg-gray-100"
               >
@@ -224,7 +309,10 @@ export default function ImageUploadScanner({ onClose, onResult }: ImageUploadSca
                   type="file"
                   accept="image/*"
                   capture="environment"
-                  onChange={handleImageSelect}
+                  onChange={(e) => {
+                    console.log('📁 File input triggered');
+                    handleImageSelect(e);
+                  }}
                   className="hidden"
                 />
                 <Button size="lg" variant="outline" className="gap-2 text-white border-white hover:bg-gray-800">
