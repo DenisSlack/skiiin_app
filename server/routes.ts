@@ -568,6 +568,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // URL analysis route
+  app.post('/api/products/analyze-url', requireAuth, async (req: any, res) => {
+    try {
+      const { url } = req.body;
+      
+      if (!url) {
+        return res.status(400).json({ message: "URL is required" });
+      }
+
+      // Use Perplexity to analyze the product page and extract ingredients
+      const prompt = `Analyze this product page URL: ${url}
+      
+      Please extract the following information from the page:
+      1. Product name
+      2. Complete ingredients list (INCI names in English)
+      3. Product image URL if available
+      
+      Return the response in JSON format:
+      {
+        "productName": "exact product name",
+        "ingredients": "comma-separated list of ingredients in English",
+        "imageUrl": "product image URL or empty string"
+      }
+      
+      Important: Keep ingredient names in English even if the page is in another language.`;
+
+      const response = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.1-sonar-small-128k-online',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert at analyzing cosmetic product pages and extracting ingredient information. Always provide ingredient names in English (INCI names) regardless of the source language.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          max_tokens: 1000,
+          temperature: 0.2,
+          response_format: { type: 'json_object' }
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Perplexity API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices[0]?.message?.content;
+      
+      if (!content) {
+        throw new Error('No content received from Perplexity API');
+      }
+
+      let extractedData;
+      try {
+        extractedData = JSON.parse(content);
+      } catch (parseError) {
+        console.error('Failed to parse Perplexity response:', content);
+        throw new Error('Invalid response format from analysis service');
+      }
+
+      // Validate extracted data
+      if (!extractedData.productName || !extractedData.ingredients) {
+        return res.status(404).json({ 
+          message: "Could not extract product information from this URL. Please check if it's a valid product page." 
+        });
+      }
+
+      res.json({
+        productName: extractedData.productName,
+        ingredients: extractedData.ingredients,
+        imageUrl: extractedData.imageUrl || ""
+      });
+
+    } catch (error) {
+      console.error("Error analyzing URL:", error);
+      res.status(500).json({ 
+        message: "Failed to analyze product URL", 
+        error: (error as Error).message 
+      });
+    }
+  });
+
   // Analysis routes
   app.post('/api/analysis', requireAuth, async (req: any, res) => {
     try {
