@@ -764,13 +764,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Обновляем продукт с результатами анализа (не создаем новый)
       // Продукт уже существует, просто сохраняем анализ
 
-      // Save analysis
+      // Save analysis (temporary solution without analysisData field)
       const analysisData = {
         productId,
         userId,
         compatibilityScore: analysisResult.compatibilityScore || 0,
         compatibilityRating: analysisResult.compatibilityRating || 'unknown',
-        analysisData: analysisResult, // Save full analysis result as JSON
       };
 
       const analysis = await storage.createAnalysis(analysisData);
