@@ -210,7 +210,7 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
       });
       
       // Check if we have valid ingredients data
-      if (!data.found || !data.ingredients || data.ingredients.trim().length === 0) {
+      if (!data.ingredients || data.ingredients.trim().length === 0) {
         toast({
           title: "Состав не найден",
           description: data.message || "Не удалось найти состав продукта. Попробуйте ввести его вручную.",

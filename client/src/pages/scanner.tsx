@@ -93,7 +93,7 @@ export default function Scanner() {
           
           console.log("Received response:", response);
           
-          if (response.found && response.ingredients) {
+          if (response.ingredients && response.ingredients.trim().length > 0) {
             finalIngredients = response.ingredients;
             setIngredients(response.ingredients);
             console.log("Ingredients found:", response.ingredients);
