@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import Login from "@/components/auth/email-login";
+import { EmailForm } from "@/components/auth/email-form";
 import SmsLogin from "@/components/auth/sms-login";
 import { TelegramLogin } from "@/components/auth/telegram-login";
 import { useQueryClient } from "@tanstack/react-query";
@@ -58,7 +58,11 @@ export default function LoginPage() {
           </TabsList>
 
           <TabsContent value="email" className="mt-6">
-            <Login onSuccess={handleLoginSuccess} />
+            <Card>
+              <CardContent className="pt-6">
+                <EmailForm onSuccess={handleLoginSuccess} />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="sms" className="mt-6">
