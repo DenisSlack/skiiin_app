@@ -6,7 +6,7 @@ import BottomNavigation from "@/components/layout/bottom-navigation";
 import ProductAnalyzer from "@/components/scanner/product-analyzer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Scan } from "lucide-react";
+import { ArrowLeft, Scan, Sparkles } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -26,7 +26,7 @@ export default function Scanner() {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       analyzeProductMutation.mutate({ 
         productId: product.id, 
-        ingredientList: ingredients 
+        ingredientList: product.ingredients.join(", ")
       });
     },
     onError: () => {
@@ -44,10 +44,10 @@ export default function Scanner() {
       const response = await apiRequest("POST", "/api/analysis", { productId, ingredientList });
       return response.json();
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/analysis/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
-      setLocation(`/analysis/${data.analysis.productId}`);
+    onSuccess: (analysis) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      setLocation(`/analysis/${analysis.id}`);
+      setIsAnalyzing(false);
     },
     onError: () => {
       toast({
@@ -59,31 +59,27 @@ export default function Scanner() {
     },
   });
 
-  const handleAnalyze = async () => {
-    if (!productName.trim()) {
-      toast({
-        title: "Недостающая информация",
-        description: "Укажите название продукта.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const handleAnalyze = async (data: {
+    productName: string;
+    ingredients: string;
+    productUrl?: string;
+    imageData?: string;
+  }) => {
     setIsAnalyzing(true);
+    setShowAnalyzer(false);
 
     try {
-      let finalIngredients = ingredients;
+      let finalIngredients = data.ingredients;
       
       // If no ingredients provided, try to find them automatically
-      if (!ingredients.trim()) {
+      if (!finalIngredients.trim()) {
         const response = await apiRequest("POST", "/api/products/find-ingredients", {
-          productName: productName.trim()
+          productName: data.productName.trim()
         });
-        const data = await response.json();
+        const apiData = await response.json();
         
-        if (data.ingredients) {
-          finalIngredients = data.ingredients;
-          setIngredients(data.ingredients);
+        if (apiData.ingredients) {
+          finalIngredients = apiData.ingredients;
           toast({
             title: "Состав найден автоматически",
             description: "Анализируем найденный состав продукта.",
@@ -91,7 +87,7 @@ export default function Scanner() {
         } else {
           toast({
             title: "Состав не найден",
-            description: "Введите состав продукта вручную для анализа.",
+            description: "Попробуйте ввести состав продукта вручную.",
             variant: "destructive",
           });
           setIsAnalyzing(false);
@@ -101,39 +97,19 @@ export default function Scanner() {
 
       // Create product with ingredients and image
       createProductMutation.mutate({
-        name: productName,
+        name: data.productName,
         category: "unknown",
         ingredients: finalIngredients.split(",").map(i => i.trim()),
-        imageUrl: productImage,
+        imageUrl: data.imageData,
       });
     } catch (error) {
       toast({
         title: "Ошибка",
-        description: "Не удалось найти состав продукта. Попробуйте ввести его вручную.",
+        description: "Не удалось проанализировать продукт. Попробуйте снова.",
         variant: "destructive",
       });
       setIsAnalyzing(false);
     }
-  };
-
-  const handleScanResult = (scannedText: string, extractedIngredients?: string[], capturedImage?: string, detectedProductName?: string) => {
-    if (extractedIngredients && extractedIngredients.length > 0) {
-      setIngredients(extractedIngredients.join(", "));
-    } else {
-      setIngredients(scannedText);
-    }
-    
-    // Сохраняем захваченное изображение
-    if (capturedImage) {
-      setProductImage(capturedImage);
-    }
-    
-    // Автоматически заполняем название продукта
-    if (detectedProductName && !productName.trim()) {
-      setProductName(detectedProductName);
-    }
-    
-    setShowCamera(false);
   };
 
   return (
@@ -151,206 +127,136 @@ export default function Scanner() {
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <h2 className="text-xl font-semibold">Сканер продуктов</h2>
+          <h2 className="text-xl font-semibold">Анализ продуктов</h2>
         </div>
 
-        {/* Scanner Section */}
-        <Card className="border-gray-200">
-          <CardContent className="p-6 space-y-4">
-            {showCamera ? (
-              <div className="space-y-4">
-                <ImageUploadScanner 
-                  onClose={() => setShowCamera(false)}
-                  onResult={handleScanResult}
-                />
-              </div>
-            ) : (
-              <>
-                <div className="relative bg-gray-100 rounded-xl h-48 flex items-center justify-center">
-                  <div className="text-center space-y-4">
-                    <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/60 rounded-full mx-auto flex items-center justify-center">
-                      <Camera className="w-8 h-8 text-white" />
-                    </div>
-                    <p className="text-gray-600 text-sm">Нажмите для сканирования состава</p>
-                  </div>
-                </div>
-                
-                <Button 
-                  className="w-full app-gradient text-white font-medium"
-                  onClick={() => setShowCamera(true)}
-                >
-                  <Camera className="w-4 h-4 mr-2" />
-                  Запустить камеру
-                </Button>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Modern Product Information Form */}
-        <Card className="border-gray-200 shadow-sm">
+        {/* Main Scanner Card */}
+        <Card className="border-gray-200 overflow-hidden">
           <CardContent className="p-0">
-            {/* Header with gradient */}
-            <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-6 border-b border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-900">Информация о продукте</h3>
-              <p className="text-sm text-gray-600 mt-1">Введите данные о продукте для анализа</p>
+            {/* Hero Section */}
+            <div className="bg-gradient-to-br from-purple-500 via-purple-600 to-pink-500 text-white p-8 text-center">
+              <div className="space-y-4">
+                <div className="w-20 h-20 bg-white/20 rounded-full mx-auto flex items-center justify-center backdrop-blur-sm">
+                  <Sparkles className="w-10 h-10 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold mb-2">Умный AI-анализ</h3>
+                  <p className="text-purple-100 text-sm">
+                    Получите персонализированные рекомендации на основе вашего типа кожи
+                  </p>
+                </div>
+                <div className="flex items-center justify-center space-x-2 text-purple-100">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-xs">Powered by Advanced AI</span>
+                </div>
+              </div>
             </div>
-            
-            <div className="p-6 space-y-6">
-              {/* Product Image Preview */}
-              {productImage && (
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <Label className="text-sm font-medium text-gray-700">
-                      Фото продукта
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                    <img 
-                      src={productImage} 
-                      alt="Product"
-                      className="w-16 h-16 object-cover rounded-lg border border-green-300"
-                    />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-green-800">Изображение сохранено</p>
-                      <p className="text-xs text-green-600">Фото продукта будет добавлено к записи</p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setProductImage(null)}
-                      className="text-green-600 hover:text-green-800 hover:bg-green-100"
-                    >
-                      Удалить
-                    </Button>
-                  </div>
-                </div>
-              )}
 
-              {/* Product Name Field */}
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-primary rounded-full"></div>
-                  <Label htmlFor="productName" className="text-sm font-medium text-gray-700">
-                    Название продукта *
-                  </Label>
-                </div>
-                <div className="flex space-x-2">
-                  <Input
-                    id="productName"
-                    placeholder="Например: La Roche-Posay Effaclar Duo"
-                    value={productName}
-                    onChange={(e) => setProductName(e.target.value)}
-                    className="border-gray-300 focus:border-primary focus:ring-primary/20 flex-1"
-                  />
-                  <Button
-                    type="button"
-                    onClick={async () => {
-                      if (!productName.trim()) {
-                        toast({
-                          title: "Ошибка",
-                          description: "Введите название продукта",
-                          variant: "destructive",
-                        });
-                        return;
-                      }
-                      
-                      try {
-                        console.log("Testing ingredient search for:", productName);
-                        const response = await fetch('/api/products/find-ingredients', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          credentials: 'include',
-                          body: JSON.stringify({ productName: productName.trim() })
-                        });
-                        
-                        console.log("Response status:", response.status);
-                        
-                        if (!response.ok) {
-                          throw new Error(`Server error: ${response.status}`);
-                        }
-                        
-                        const data = await response.json();
-                        console.log("Response data:", data);
-                        
-                        if (data.ingredients) {
-                          setIngredients(data.ingredients);
-                          toast({
-                            title: "Состав найден!",
-                            description: `Найдено ${data.ingredients.split(',').length} ингредиентов`,
-                          });
-                        } else {
-                          toast({
-                            title: "Состав не найден",
-                            description: "Попробуйте другое название продукта",
-                            variant: "destructive",
-                          });
-                        }
-                      } catch (error) {
-                        console.error("Error:", error);
-                        toast({
-                          title: "Ошибка поиска",
-                          description: "Проверьте подключение к интернету",
-                          variant: "destructive",
-                        });
-                      }
-                    }}
-                    disabled={!productName.trim()}
-                    className="px-4 py-2 bg-primary text-white"
-                  >
-                    Найти состав
-                  </Button>
-                </div>
+            {/* Quick Actions */}
+            <div className="p-6 space-y-4">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">Быстрый анализ</h4>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <Button
+                  onClick={() => setShowAnalyzer(true)}
+                  className="h-20 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex flex-col items-center justify-center space-y-2"
+                  disabled={isAnalyzing}
+                >
+                  <Scan className="w-6 h-6" />
+                  <span className="text-sm font-medium">Сканировать продукт</span>
+                </Button>
+                
+                <Button
+                  onClick={() => setShowAnalyzer(true)}
+                  variant="outline"
+                  className="h-20 border-2 border-purple-200 rounded-xl hover:border-purple-300 hover:bg-purple-50 transition-all duration-200 flex flex-col items-center justify-center space-y-2"
+                  disabled={isAnalyzing}
+                >
+                  <Sparkles className="w-6 h-6 text-purple-600" />
+                  <span className="text-sm font-medium text-purple-600">Найти по названию</span>
+                </Button>
               </div>
 
-              {/* Ingredients Field */}
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-primary rounded-full"></div>
-                  <Label htmlFor="ingredients" className="text-sm font-medium text-gray-700">
-                    Состав продукта *
-                  </Label>
+              {/* Features */}
+              <div className="grid grid-cols-1 gap-3 mt-6">
+                <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm text-green-800">Анализ совместимости с вашим типом кожи</span>
                 </div>
-                <Textarea
-                  id="ingredients"
-                  placeholder="Вставьте или введите список ингредиентов или просто название продукта для автоматического поиска состава..."
-                  value={ingredients}
-                  onChange={(e) => setIngredients(e.target.value)}
-                  rows={6}
-                  className="resize-none border-gray-300 focus:border-primary focus:ring-primary/20"
-                />
-                <p className="text-xs text-gray-500">
-                  Можете ввести просто название продукта - мы найдем состав автоматически
-                </p>
+                <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="text-sm text-blue-800">Детальная оценка безопасности ингредиентов</span>
+                </div>
+                <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                  <span className="text-sm text-purple-800">Персонализированные рекомендации</span>
+                </div>
               </div>
-
-              {/* Analyze Button */}
-              <Button 
-                className="w-full app-gradient text-white font-medium h-12 text-base"
-                onClick={handleAnalyze}
-                disabled={isAnalyzing || !productName.trim()}
-              >
-                {isAnalyzing ? (
-                  <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Анализируем...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                    </svg>
-                    Начать анализ
-                  </>
-                )}
-              </Button>
             </div>
           </CardContent>
         </Card>
+
+        {/* How it works */}
+        <Card className="border-gray-200">
+          <CardContent className="p-6">
+            <h4 className="text-lg font-semibold text-gray-900 mb-4">Как это работает</h4>
+            <div className="space-y-4">
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-xs font-bold text-purple-600">1</span>
+                </div>
+                <div>
+                  <h5 className="font-medium text-gray-900">Добавьте продукт</h5>
+                  <p className="text-sm text-gray-600">Сфотографируйте состав, введите название или ссылку на товар</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-xs font-bold text-purple-600">2</span>
+                </div>
+                <div>
+                  <h5 className="font-medium text-gray-900">AI анализирует</h5>
+                  <p className="text-sm text-gray-600">Искусственный интеллект оценивает каждый ингредиент</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-xs font-bold text-purple-600">3</span>
+                </div>
+                <div>
+                  <h5 className="font-medium text-gray-900">Получите результат</h5>
+                  <p className="text-sm text-gray-600">Детальный отчет с оценкой и рекомендациями</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {isAnalyzing && (
+          <Card className="border-purple-200 bg-purple-50">
+            <CardContent className="p-6 text-center">
+              <div className="space-y-3">
+                <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto"></div>
+                <div>
+                  <h4 className="font-semibold text-purple-900">Анализируем продукт</h4>
+                  <p className="text-sm text-purple-700">Это может занять несколько секунд...</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </main>
 
       <BottomNavigation />
+      
+      {showAnalyzer && (
+        <ProductAnalyzer
+          onClose={() => setShowAnalyzer(false)}
+          onAnalyze={handleAnalyze}
+        />
+      )}
     </div>
   );
 }
