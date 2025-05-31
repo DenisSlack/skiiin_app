@@ -2,7 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { analyzeIngredientsWithPerplexity, findProductIngredients, generatePartnerRecommendations, extractIngredientsFromText, findProductImage, getPersonalizedRecommendation } from "./perplexity";
+import { analyzeIngredientsWithPerplexity, findProductIngredients, generatePartnerRecommendations, findProductImage, getPersonalizedRecommendation } from "./perplexity";
+import { extractIngredientsFromText } from "./gemini";
 import { scoreProduct } from "./scoring";
 import { insertProductSchema, insertAnalysisSchema, updateSkinProfileSchema, loginSchema, registerSchema, smsLoginSchema, smsVerifySchema, telegramLoginSchema, telegramVerifySchema } from "@shared/schema";
 import { sendSMSCode, generateSMSCode } from "./smsService";
@@ -1186,6 +1187,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = await response.json();
       const content = data.choices[0]?.message?.content;
       
+      console.log(`Raw response for ${productName}:`, content);
+      
       if (!content) {
         throw new Error('No content received from search service');
       }
@@ -1195,18 +1198,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         result = JSON.parse(content);
       } catch (parseError) {
         console.error('Failed to parse response:', content);
-        throw new Error('Invalid response format');
+        // If JSON parsing fails, treat the content as plain ingredient list
+        if (content.includes(',')) {
+          result = { ingredients: content.trim(), found: true };
+        } else {
+          throw new Error('Invalid response format');
+        }
       }
 
-      if (!result.found || !result.ingredients) {
+      console.log('Parsed result:', result);
+
+      // Check if we have ingredients in any format
+      const ingredients = result.ingredients || content;
+      if (!ingredients || ingredients.trim().length === 0) {
         return res.status(404).json({ 
           message: "Ingredients not found for this product",
           found: false
         });
       }
 
+      console.log(`Extracted ingredients for ${productName}:`, ingredients);
+
       res.json({
-        ingredients: result.ingredients,
+        ingredients: ingredients,
         found: true
       });
 
