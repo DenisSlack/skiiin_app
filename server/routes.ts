@@ -773,20 +773,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         analysisData: analysisResult, // Full analysis data as JSON
       };
 
-      let analysis;
+      // Create analysis record (fallback if database is unavailable)
+      let analysis = {
+        id: Date.now(), // temporary ID
+        productId,
+        userId,
+        compatibilityScore: Math.round(analysisResult.compatibilityScore || 0),
+        compatibilityRating: analysisResult.compatibilityRating || 'good',
+        createdAt: new Date().toISOString()
+      };
+
+      // Try to save to database, but continue if it fails
       try {
-        analysis = await storage.createAnalysis(analysisData);
+        const dbAnalysis = await storage.createAnalysis(analysisData);
+        analysis = dbAnalysis; // Use database version if successful
       } catch (dbError) {
-        console.error("Database schema issue, creating minimal analysis:", dbError);
-        // Create a minimal analysis record for now
-        analysis = {
-          id: Date.now(), // temporary ID
-          productId,
-          userId,
-          compatibilityScore: Math.round(analysisResult.compatibilityScore || 0),
-          compatibilityRating: analysisResult.compatibilityRating || 'good',
-          createdAt: new Date().toISOString()
-        };
+        console.error("Database temporarily unavailable, using memory analysis:", dbError);
+        // Continue with memory-based analysis
       }
       
       res.json({
