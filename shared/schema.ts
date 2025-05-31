@@ -94,6 +94,18 @@ export const smsCodes = pgTable("sms_codes", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Telegram codes table
+export const telegramCodes = pgTable("telegram_codes", {
+  id: serial("id").primaryKey(),
+  phone: varchar("phone", { length: 20 }).notNull(),
+  code: varchar("code", { length: 8 }).notNull(),
+  telegramMessageId: integer("telegram_message_id"),
+  status: integer("status").default(0), // 0 - queue, 1 - delivered, 2 - failed
+  expiresAt: timestamp("expires_at").notNull(),
+  verified: boolean("verified").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   products: many(products),
@@ -175,6 +187,20 @@ export const insertSmsCodeSchema = createInsertSchema(smsCodes).omit({
   createdAt: true,
 });
 
+export const telegramLoginSchema = z.object({
+  phone: z.string().min(10, "Введите корректный номер телефона"),
+});
+
+export const telegramVerifySchema = z.object({
+  phone: z.string().min(10, "Введите корректный номер телефона"),
+  code: z.string().min(4, "Код должен содержать минимум 4 цифры").max(8, "Код должен содержать максимум 8 цифр"),
+});
+
+export const insertTelegramCodeSchema = createInsertSchema(telegramCodes).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -191,3 +217,7 @@ export type SmsLogin = z.infer<typeof smsLoginSchema>;
 export type SmsVerify = z.infer<typeof smsVerifySchema>;
 export type InsertSmsCode = z.infer<typeof insertSmsCodeSchema>;
 export type SmsCode = typeof smsCodes.$inferSelect;
+export type TelegramLogin = z.infer<typeof telegramLoginSchema>;
+export type TelegramVerify = z.infer<typeof telegramVerifySchema>;
+export type InsertTelegramCode = z.infer<typeof insertTelegramCodeSchema>;
+export type TelegramCode = typeof telegramCodes.$inferSelect;
