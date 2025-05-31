@@ -77,3 +77,18 @@ export function mapIngredientToSupabase(ingredient: any): any {
   
   return mapped;
 }
+
+export function mapTelegramCodeToSupabase(telegramCode: any): any {
+  const mapped: any = {};
+  
+  if (telegramCode.phone !== undefined) mapped.phone = telegramCode.phone;
+  if (telegramCode.code !== undefined) mapped.code = telegramCode.code;
+  if (telegramCode.messageId !== undefined) mapped.message_id = telegramCode.messageId;
+  if (telegramCode.status !== undefined) mapped.status = telegramCode.status;
+  if (telegramCode.extendStatus !== undefined) mapped.extend_status = telegramCode.extendStatus;
+  if (telegramCode.verified !== undefined) mapped.verified = telegramCode.verified;
+  if (telegramCode.expiresAt !== undefined) mapped.expires_at = telegramCode.expiresAt;
+  if (telegramCode.createdAt !== undefined) mapped.created_at = telegramCode.createdAt;
+  
+  return mapped;
+}

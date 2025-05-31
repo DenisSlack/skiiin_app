@@ -270,6 +270,63 @@ export class DatabaseStorage implements IStorage {
       .delete(smsCodes)
       .where(eq(smsCodes.verified, true));
   }
+
+  // Telegram code operations
+  async createTelegramCode(telegramCode: InsertTelegramCode): Promise<TelegramCode> {
+    const [code] = await db
+      .insert(telegramCodes)
+      .values(telegramCode)
+      .returning();
+    return code;
+  }
+
+  async getValidTelegramCode(phone: string, code: string): Promise<TelegramCode | undefined> {
+    const [telegramCode] = await db
+      .select()
+      .from(telegramCodes)
+      .where(
+        and(
+          eq(telegramCodes.phone, phone),
+          eq(telegramCodes.code, code),
+          eq(telegramCodes.verified, false)
+        )
+      )
+      .orderBy(desc(telegramCodes.createdAt))
+      .limit(1);
+    
+    if (!telegramCode) return undefined;
+    
+    if (new Date() > telegramCode.expiresAt) {
+      return undefined;
+    }
+    
+    return telegramCode;
+  }
+
+  async markTelegramCodeAsVerified(id: number): Promise<void> {
+    await db
+      .update(telegramCodes)
+      .set({ verified: true })
+      .where(eq(telegramCodes.id, id));
+  }
+
+  async updateTelegramCodeStatus(id: number, status: number, extendStatus?: string): Promise<void> {
+    const updateData: any = { status };
+    if (extendStatus) {
+      updateData.extendStatus = extendStatus;
+    }
+    
+    await db
+      .update(telegramCodes)
+      .set(updateData)
+      .where(eq(telegramCodes.id, id));
+  }
+
+  async cleanupExpiredTelegramCodes(): Promise<void> {
+    await db
+      .delete(telegramCodes)
+      .where(lt(telegramCodes.expiresAt, new Date()));
+  }
 }
 
 // Use Supabase API storage for better reliability

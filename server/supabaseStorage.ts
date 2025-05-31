@@ -4,7 +4,8 @@ import {
   mapProductToSupabase,
   mapAnalysisToSupabase,
   mapSmsCodeToSupabase,
-  mapIngredientToSupabase
+  mapIngredientToSupabase,
+  mapTelegramCodeToSupabase
 } from './fieldMapper';
 import type {
   User,
@@ -18,7 +19,9 @@ import type {
   UpdateSkinProfile,
   RegisterData,
   SmsCode,
-  InsertSmsCode
+  InsertSmsCode,
+  TelegramCode,
+  InsertTelegramCode
 } from '@shared/schema';
 import type { IStorage } from './storage';
 
