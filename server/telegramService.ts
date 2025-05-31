@@ -35,7 +35,7 @@ export async function sendTelegramCode({
     const cleanPhone = phone.replace(/[^\d]/g, '');
     
     // Формируем URL для API
-    const baseUrl = `https://${process.env.SMSAERO_EMAIL}:${process.env.SMSAERO_API_KEY}@gate.smsaero.ru/v2/telegram/send`;
+    const baseUrl = 'https://gate.smsaero.ru/v2/telegram/send';
     
     const params = new URLSearchParams({
       number: cleanPhone,
@@ -50,10 +50,14 @@ export async function sendTelegramCode({
 
     console.log(`Sending Telegram code to ${cleanPhone}`);
     
+    // Создаем базовую авторизацию
+    const credentials = Buffer.from(`${process.env.SMSAERO_EMAIL}:${process.env.SMSAERO_API_KEY}`).toString('base64');
+    
     const response = await fetch(`${baseUrl}?${params}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Basic ${credentials}`,
       },
     });
 
@@ -96,12 +100,16 @@ export async function checkTelegramCodeStatus(messageId: number): Promise<{
       throw new Error("SMSAERO_EMAIL и SMSAERO_API_KEY должны быть настроены");
     }
 
-    const baseUrl = `https://${process.env.SMSAERO_EMAIL}:${process.env.SMSAERO_API_KEY}@gate.smsaero.ru/v2/telegram/status`;
+    const baseUrl = 'https://gate.smsaero.ru/v2/telegram/status';
+    
+    // Создаем базовую авторизацию
+    const credentials = Buffer.from(`${process.env.SMSAERO_EMAIL}:${process.env.SMSAERO_API_KEY}`).toString('base64');
     
     const response = await fetch(`${baseUrl}?id=${messageId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Basic ${credentials}`,
       },
     });
 
