@@ -1,0 +1,90 @@
+добавь авторизацию через telegram с помощью сервиса smsaero, вот инструкция по api https://smsaero.ru/integration/documentation/api/
+
+Вот данные: 
+Отправка кода в Telegram
+telegram/send
+Параметр	Формат	Применение	Описание
+number	string	Обязательно (на выбор).	Номер телефона.
+numbers	array	Обязательно (на выбор).	Номера телефонов.
+code	int	Обязательно.	Код Telegram (от 4 до 8 цифр).
+sign	string	Необязательно.	Имя отправителя SMS.
+text	string	Необязательно.	Текст сообщения SMS.
+При использовании параметров: text, sign, в случае недоставки кода в Telegram, будет отправлено SMS с указанными значениями.
+Пример отправки кода в Telegram без SMS:
+
+https://email:api_key@gate.smsaero.ru/v2/telegram/send?number=79990000000&code=1234
+
+Пример отправки каскада: код в Telegram + SMS:
+
+https://email:api_key@gate.smsaero.ru/v2/telegram/send?number=79990000000&code=1234&text=Ваш+код+1234&sign=SMS+Aero
+
+Ответ приходит в формате JSON или XML:
+
+{
+    "success": true,
+    "data": {
+       "id": 1,
+       "number": "79990000000",
+       "telegramCode": "1234",
+       "smsText": "Ваш код 1234",
+       "smsFrom": "SMS Aero",
+       "idSms": null,
+       "status": 0,
+       "extendStatus": "queue",
+       "cost": "1.00",
+       "dateCreate": 1732796285
+     },
+    "message": null
+}
+
+Значения переменных в ответе:
+Параметр	Описание
+id	Идентификатор сообщения в системе.
+number	Номер, на который отправлено сообщение.
+telegramCode	Кода в Telegram.
+smsText	Текст SMS сообщения.
+smsFrom	Имя SMS отправителя.
+idSms	Идентификатор SMS сообщения в системе.
+status	Статус сообщения: 0 — в очереди, 1 — доставлено, 2 — не доставлено, 3 — передано, 8 — на модерации, 6 — сообщение отклонено, 4 — ожидание статуса сообщения.
+extendStatus	Описание статуса.
+cost	Стоимость сообщения.
+dateCreate	Дата создания в формате Unix time.
+Проверка статуса кода в Telegram
+telegram/status
+Параметр	Формат	Применение	Описание
+id	integer	Обязательно.	Идентификатор сообщения, который вернул сервис при отправке
+Пример получения статуса Telegram-кода:
+
+https://email:api_key@gate.smsaero.ru/v2/telegram/status?id=1
+
+Ответ приходит в формате JSON или XML:
+
+{
+    "success": true,
+    "data": {
+       "id": 1,
+       "number": "79990000000",
+       "telegramCode": "1234",
+       "smsText": "Ваш код 1234",
+       "smsFrom": "SMS Aero",
+       "idSms": null,
+       "status": 1,
+       "extendStatus": "delivery",
+       "cost": "1.00",
+       "dateCreate": 1732796285
+     },
+    "message": null
+}
+
+Значения переменных в ответе:
+Параметр	Описание
+id	Идентификатор сообщения в системе.
+number	Номер, на который отправлено сообщение.
+telegramCode	Код в Telegram.
+smsText	Текст SMS сообщения.
+smsFrom	Имя SMS отправителя.
+idSms	Идентификатор SMS сообщения в системе.
+status	Статус сообщения: 0 — в очереди, 1 — доставлено, 2 — не доставлено, 3 — передано, 8 — на модерации, 6 — сообщение отклонено, 4 — ожидание статуса сообщения.
+extendStatus	Описание статуса.
+cost	Стоимость сообщения.
+dateCreate	Дата создания в формате Unix time.
