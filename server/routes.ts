@@ -711,7 +711,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Analysis debug - UserId from request:", userId);
       console.log("Analysis debug - Product userId:", product?.userId);
       
-      if (!product || product.userId !== userId) {
+      if (!product || (product.userId !== userId && (product as any).user_id !== userId)) {
         return res.status(404).json({ message: "Product not found" });
       }
 
