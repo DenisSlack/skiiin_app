@@ -64,26 +64,35 @@ export default function ImageUploadScanner({ onClose, onResult }: ImageUploadSca
       console.log('✅ Camera stream obtained:', stream);
       console.log('📹 Video tracks:', stream.getVideoTracks().length);
       
-      if (videoRef.current) {
-        console.log('📺 Setting video source...');
-        videoRef.current.srcObject = stream;
-        streamRef.current = stream;
-        
-        videoRef.current.onloadedmetadata = () => {
-          console.log('✅ Video metadata loaded');
-          console.log('📐 Video dimensions:', videoRef.current?.videoWidth, 'x', videoRef.current?.videoHeight);
-        };
-        
-        videoRef.current.onplay = () => {
-          console.log('▶️ Video started playing');
-        };
-        
-        setShowCamera(true);
-        console.log('✅ Camera interface shown');
-      } else {
-        console.error('❌ Video ref is null');
-        setCameraError('Ошибка инициализации видео');
-      }
+      // Сохраняем поток и показываем интерфейс камеры
+      streamRef.current = stream;
+      setShowCamera(true);
+      console.log('✅ Camera interface shown');
+      
+      // Ждем следующий рендер и инициализируем видео
+      setTimeout(() => {
+        if (videoRef.current && streamRef.current) {
+          console.log('📺 Setting video source...');
+          videoRef.current.srcObject = streamRef.current;
+          
+          videoRef.current.onloadedmetadata = () => {
+            console.log('✅ Video metadata loaded');
+            console.log('📐 Video dimensions:', videoRef.current?.videoWidth, 'x', videoRef.current?.videoHeight);
+          };
+          
+          videoRef.current.onplay = () => {
+            console.log('▶️ Video started playing');
+          };
+          
+          videoRef.current.onerror = (e) => {
+            console.error('❌ Video error:', e);
+          };
+          
+        } else {
+          console.error('❌ Video ref still null after timeout');
+          setCameraError('Ошибка инициализации видео');
+        }
+      }, 100);
     } catch (error) {
       console.error('❌ Camera error:', error);
       console.error('Error name:', error.name);
