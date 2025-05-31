@@ -10,8 +10,8 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
 interface ProductAnalyzerProps {
-  onClose: () => void;
-  onAnalyze: (data: {
+  onClose?: () => void;
+  onAnalyze?: (data: {
     productName: string;
     ingredients: string;
     productUrl?: string;
