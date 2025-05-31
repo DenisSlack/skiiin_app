@@ -569,7 +569,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // URL analysis route
-  app.post('/api/products/analyze-url', requireAuth, async (req: any, res) => {
+  app.post('/api/products/analyze-url', async (req: any, res) => {
+    console.log('*** URL ANALYSIS REQUEST RECEIVED ***');
+    console.log('Request body:', req.body);
+    console.log('User session:', req.session?.userId);
+    console.log('Authorization header:', req.headers.authorization);
+    
     try {
       const { url } = req.body;
       console.log('Analyzing URL:', url);
