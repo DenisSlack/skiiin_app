@@ -572,9 +572,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/products/analyze-url', requireAuth, async (req: any, res) => {
     try {
       const { url } = req.body;
+      console.log('Analyzing URL:', url);
       
       if (!url) {
         return res.status(400).json({ message: "URL is required" });
+      }
+
+      if (!process.env.PERPLEXITY_API_KEY) {
+        console.error('PERPLEXITY_API_KEY not found');
+        return res.status(500).json({ message: "API configuration error" });
       }
 
       // Use Perplexity to analyze the product page and extract ingredients
@@ -594,6 +600,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       Important: Keep ingredient names in English even if the page is in another language.`;
 
+      console.log('Making request to Perplexity API...');
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
         headers: {
@@ -618,8 +625,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }),
       });
 
+      console.log('Perplexity API response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error(`Perplexity API error: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Perplexity API error response:', errorText);
+        throw new Error(`Perplexity API error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
