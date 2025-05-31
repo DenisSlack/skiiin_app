@@ -20,7 +20,7 @@ interface ProductAnalyzerProps {
 }
 
 export default function ProductAnalyzer({ onClose, onAnalyze }: ProductAnalyzerProps) {
-  const [activeTab, setActiveTab] = useState("search");
+  const [activeTab, setActiveTab] = useState("camera");
   const [productName, setProductName] = useState("");
   const [productUrl, setProductUrl] = useState("");
   const [ingredients, setIngredients] = useState("");
@@ -91,15 +91,38 @@ export default function ProductAnalyzer({ onClose, onAnalyze }: ProductAnalyzerP
 
     try {
       setIsProcessing(true);
-      // Здесь можно добавить API для парсинга URL и извлечения информации о продукте
-      toast({
-        title: "Анализ ссылки",
-        description: "Функция будет добавлена в следующих обновлениях",
+      const response = await fetch('/api/products/analyze-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ productUrl: productUrl.trim() })
       });
+
+      if (!response.ok) throw new Error('URL analysis failed');
+
+      const data = await response.json();
+      if (data.productName || data.ingredients) {
+        if (data.productName) {
+          setProductName(data.productName);
+        }
+        if (data.ingredients) {
+          setIngredients(data.ingredients);
+        }
+        toast({
+          title: "Анализ ссылки завершен!",
+          description: `${data.productName ? 'Название и ' : ''}${data.ingredients ? 'состав извлечены' : 'данные получены'}`,
+        });
+      } else {
+        toast({
+          title: "Данные не найдены",
+          description: "Не удалось извлечь информацию о продукте с указанной ссылки",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       toast({
         title: "Ошибка анализа",
-        description: "Не удалось проанализировать ссылку",
+        description: "Не удалось проанализировать ссылку. Проверьте правильность URL",
         variant: "destructive",
       });
     } finally {
@@ -188,19 +211,19 @@ export default function ProductAnalyzer({ onClose, onAnalyze }: ProductAnalyzerP
         <CardContent className="p-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <TabsList className="grid w-full grid-cols-4 mb-6">
-              <TabsTrigger value="search" className="text-xs">
-                <Search className="w-4 h-4 mb-1" />
-                Поиск
-              </TabsTrigger>
-              <TabsTrigger value="camera" className="text-xs">
+              <TabsTrigger value="camera" className="text-xs flex flex-col items-center py-3">
                 <Camera className="w-4 h-4 mb-1" />
                 Камера
               </TabsTrigger>
-              <TabsTrigger value="upload" className="text-xs">
+              <TabsTrigger value="upload" className="text-xs flex flex-col items-center py-3">
                 <Upload className="w-4 h-4 mb-1" />
-                Фото
+                Загрузить
               </TabsTrigger>
-              <TabsTrigger value="url" className="text-xs">
+              <TabsTrigger value="search" className="text-xs flex flex-col items-center py-3">
+                <Search className="w-4 h-4 mb-1" />
+                Поиск
+              </TabsTrigger>
+              <TabsTrigger value="url" className="text-xs flex flex-col items-center py-3">
                 <Link className="w-4 h-4 mb-1" />
                 Ссылка
               </TabsTrigger>
@@ -308,7 +331,7 @@ export default function ProductAnalyzer({ onClose, onAnalyze }: ProductAnalyzerP
             <TabsContent value="url" className="space-y-4">
               <div className="space-y-3">
                 <Input
-                  placeholder="https://example.com/product"
+                  placeholder="https://sephora.com/product/..."
                   value={productUrl}
                   onChange={(e) => setProductUrl(e.target.value)}
                   className="border-gray-300"
@@ -320,6 +343,18 @@ export default function ProductAnalyzer({ onClose, onAnalyze }: ProductAnalyzerP
                 >
                   {isProcessing ? "Анализ..." : "Анализировать ссылку"}
                 </Button>
+              </div>
+              
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <Link className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <h5 className="font-medium text-blue-900 mb-1">Поддерживаемые сайты</h5>
+                    <p className="text-sm text-blue-800">
+                      Можно использовать ссылки с сайтов косметических магазинов: Sephora, Douglas, Летуаль, L'Etoile и других
+                    </p>
+                  </div>
+                </div>
               </div>
             </TabsContent>
           </Tabs>

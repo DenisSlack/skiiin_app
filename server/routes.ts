@@ -788,6 +788,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Analyze product URL to extract name and ingredients
+  app.post('/api/products/analyze-url', async (req: any, res) => {
+    try {
+      console.log("URL analysis request received:", req.body);
+      const { productUrl } = req.body;
+      
+      if (!productUrl) {
+        console.log("No product URL provided");
+        return res.status(400).json({ message: "Product URL is required" });
+      }
+
+      console.log("Analyzing URL:", productUrl);
+      
+      if (!process.env.PERPLEXITY_API_KEY) {
+        return res.status(500).json({ message: "PERPLEXITY_API_KEY не настроен" });
+      }
+
+      const response = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'llama-3.1-sonar-small-128k-online',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a cosmetic product analyzer. Extract product information from URLs. Return only a JSON object with product name and ingredients list in English.'
+            },
+            {
+              role: 'user',
+              content: `Analyze this cosmetic product URL and extract the product name and complete ingredients list: ${productUrl}
+
+Please return a JSON object in this exact format:
+{
+  "productName": "Product Name",
+  "ingredients": "ingredient1, ingredient2, ingredient3..."
+}
+
+Only return the JSON object, no additional text. If ingredients are not found, return empty string for ingredients.`
+            }
+          ],
+          temperature: 0.2,
+          max_tokens: 1000,
+          stream: false
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Perplexity API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices[0].message.content;
+      console.log("Perplexity response:", content);
+      
+      try {
+        const productInfo = JSON.parse(content);
+        console.log("Extracted product info:", productInfo);
+        
+        res.json({
+          productName: productInfo.productName || '',
+          ingredients: productInfo.ingredients || ''
+        });
+      } catch (parseError) {
+        console.error("Failed to parse Perplexity response:", content);
+        
+        // Try to extract data manually if JSON parsing fails
+        let productName = '';
+        let ingredients = '';
+        
+        if (content.includes('productName')) {
+          const nameMatch = content.match(/"productName":\s*"([^"]+)"/);
+          productName = nameMatch ? nameMatch[1] : '';
+        }
+        
+        if (content.includes('ingredients')) {
+          const ingredientsMatch = content.match(/"ingredients":\s*"([^"]+)"/);
+          ingredients = ingredientsMatch ? ingredientsMatch[1] : '';
+        }
+        
+        res.json({
+          productName,
+          ingredients,
+          warning: "Частичный анализ - данные могут быть неполными"
+        });
+      }
+    } catch (error) {
+      console.error("Error analyzing URL:", error);
+      res.status(500).json({ message: "Failed to analyze URL" });
+    }
+  });
+
   // Complete product image analysis endpoint
   app.post("/api/analyze-product-image", requireAuth, async (req, res) => {
     try {
