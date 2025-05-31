@@ -1144,17 +1144,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Searching ingredients for product: ${productName}`);
 
-      const prompt = `Find the complete INCI ingredient list for the cosmetic product: ${productName}
+      const prompt = `Find the complete, full INCI ingredient list for the cosmetic product: "${productName}"
 
-      Please provide the full ingredient list in English (INCI names) as it appears on the product packaging.
+      I need the COMPLETE ingredient list as it appears on the actual product packaging, not just the main ingredients. Please search for the official ingredient list from:
+      - Official brand websites
+      - Product packaging information
+      - Cosmetic databases
+      - Beauty retailer sites
       
-      Respond in JSON format:
-      {
-        "ingredients": "complete comma-separated list of INCI ingredients in English",
-        "found": true/false
-      }
+      The list should typically contain 10-30+ ingredients for most cosmetic products.
       
-      If you cannot find the exact ingredient list, set "found" to false.`;
+      Return ONLY the comma-separated ingredient names in English (INCI format), no JSON formatting needed.
+      
+      Example format: Aqua, Glycerin, Cetearyl Alcohol, Dimethicone, Niacinamide, Butylene Glycol, Pentylene Glycol, etc.`;
 
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
@@ -1175,8 +1177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           ],
           max_tokens: 1000,
-          temperature: 0.2,
-          response_format: { type: 'json_object' }
+          temperature: 0.2
         }),
       });
 
@@ -1193,31 +1194,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error('No content received from search service');
       }
 
-      let result;
-      try {
-        result = JSON.parse(content);
-      } catch (parseError) {
-        console.error('Failed to parse response:', content);
-        // If JSON parsing fails, treat the content as plain ingredient list
-        if (content.includes(',')) {
-          result = { ingredients: content.trim(), found: true };
-        } else {
-          throw new Error('Invalid response format');
-        }
-      }
+      // Clean up the response - remove any formatting or extra text
+      let ingredients = content.trim();
+      
+      // Remove common prefixes and suffixes
+      ingredients = ingredients
+        .replace(/^.*?ingredients?:?\s*/i, '')
+        .replace(/^.*?composition:?\s*/i, '')
+        .replace(/\.$/, '')
+        .trim();
 
-      console.log('Parsed result:', result);
-
-      // Check if we have ingredients in any format
-      const ingredients = result.ingredients || content;
-      if (!ingredients || ingredients.trim().length === 0) {
+      // Check if we have a reasonable ingredient list (should have multiple ingredients)
+      const ingredientCount = ingredients.split(',').length;
+      if (!ingredients || ingredientCount < 3) {
         return res.status(404).json({ 
-          message: "Ingredients not found for this product",
+          message: "Complete ingredient list not found for this product",
           found: false
         });
       }
 
-      console.log(`Extracted ingredients for ${productName}:`, ingredients);
+      console.log(`Final ingredients for ${productName}:`, ingredients);
 
       res.json({
         ingredients: ingredients,
