@@ -159,7 +159,7 @@ export default function Scanner() {
         createProductMutation.mutate({
           name: result.productName,
           category: "unknown",
-          ingredients: result.ingredients.split(",").map(i => i.trim()),
+          ingredients: result.ingredients.split(",").map((i: string) => i.trim()),
           imageUrl: result.imageUrl,
         });
       } else {
