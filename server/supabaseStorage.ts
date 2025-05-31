@@ -441,7 +441,10 @@ export class SupabaseStorage implements IStorage {
       const { data, error } = await supabase
         .from('sms_codes')
         .insert({
-          ...smsCode,
+          phone: smsCode.phone,
+          code: smsCode.code,
+          expires_at: smsCode.expiresAt,
+          verified: smsCode.verified,
           created_at: new Date().toISOString(),
         })
         .select()
@@ -552,7 +555,12 @@ export class SupabaseStorage implements IStorage {
       const { data, error } = await supabase
         .from('telegram_codes')
         .insert({
-          ...telegramCode,
+          phone: telegramCode.phone,
+          code: telegramCode.code,
+          telegram_message_id: telegramCode.telegramMessageId,
+          status: telegramCode.status || 0,
+          expires_at: telegramCode.expiresAt,
+          verified: telegramCode.verified || false,
           created_at: new Date().toISOString(),
         })
         .select()
