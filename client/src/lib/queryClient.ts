@@ -13,6 +13,12 @@ export async function apiRequest(
   data?: unknown | undefined,
 ): Promise<any> {
   const headers: any = data ? { "Content-Type": "application/json" } : {};
+  
+  // Add authorization token if available
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
 
   const res = await fetch(url, {
     method,
@@ -32,6 +38,12 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     const headers: any = {};
+    
+    // Add authorization token if available
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
 
     const res = await fetch(queryKey[0] as string, {
       headers,

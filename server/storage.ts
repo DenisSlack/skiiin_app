@@ -4,7 +4,6 @@ import {
   analyses,
   ingredients,
   smsCodes,
-  telegramCodes,
   type User,
   type UpsertUser,
   type Product,
@@ -18,8 +17,6 @@ import {
   type RegisterData,
   type InsertSmsCode,
   type SmsCode,
-  type InsertTelegramCode,
-  type TelegramCode,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, lt } from "drizzle-orm";
@@ -57,13 +54,6 @@ export interface IStorage {
   getValidSmsCode(phone: string, code: string): Promise<SmsCode | undefined>;
   markSmsCodeAsVerified(id: number): Promise<void>;
   cleanupExpiredSmsCodes(): Promise<void>;
-  
-  // Telegram code operations
-  createTelegramCode(telegramCode: InsertTelegramCode): Promise<TelegramCode>;
-  getValidTelegramCode(phone: string, code: string): Promise<TelegramCode | undefined>;
-  markTelegramCodeAsVerified(id: number): Promise<void>;
-  updateTelegramCodeStatus(id: number, status: number, telegramMessageId?: number): Promise<void>;
-  cleanupExpiredTelegramCodes(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -269,62 +259,6 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(smsCodes)
       .where(eq(smsCodes.verified, true));
-  }
-
-  // Telegram code operations
-  async createTelegramCode(telegramCode: InsertTelegramCode): Promise<TelegramCode> {
-    const [result] = await db
-      .insert(telegramCodes)
-      .values(telegramCode)
-      .returning();
-    return result;
-  }
-
-  async getValidTelegramCode(phone: string, code: string): Promise<TelegramCode | undefined> {
-    const [telegramCode] = await db
-      .select()
-      .from(telegramCodes)
-      .where(and(
-        eq(telegramCodes.phone, phone),
-        eq(telegramCodes.code, code),
-        eq(telegramCodes.verified, false)
-      ))
-      .orderBy(desc(telegramCodes.createdAt))
-      .limit(1);
-    
-    if (!telegramCode) return undefined;
-    
-    // Check if code is expired
-    if (new Date() > telegramCode.expiresAt) {
-      return undefined;
-    }
-    
-    return telegramCode;
-  }
-
-  async markTelegramCodeAsVerified(id: number): Promise<void> {
-    await db
-      .update(telegramCodes)
-      .set({ verified: true })
-      .where(eq(telegramCodes.id, id));
-  }
-
-  async updateTelegramCodeStatus(id: number, status: number, telegramMessageId?: number): Promise<void> {
-    const updateData: any = { status };
-    if (telegramMessageId) {
-      updateData.telegramMessageId = telegramMessageId;
-    }
-    
-    await db
-      .update(telegramCodes)
-      .set(updateData)
-      .where(eq(telegramCodes.id, id));
-  }
-
-  async cleanupExpiredTelegramCodes(): Promise<void> {
-    await db
-      .delete(telegramCodes)
-      .where(eq(telegramCodes.verified, true));
   }
 }
 

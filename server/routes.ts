@@ -4,26 +4,16 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { analyzeIngredientsWithPerplexity, findProductIngredients, generatePartnerRecommendations, extractIngredientsFromText, findProductImage, getPersonalizedRecommendation } from "./perplexity";
 import { scoreProduct } from "./scoring";
-import { insertProductSchema, insertAnalysisSchema, updateSkinProfileSchema, loginSchema, registerSchema, smsLoginSchema, smsVerifySchema, telegramLoginSchema, telegramVerifySchema } from "@shared/schema";
+import { insertProductSchema, insertAnalysisSchema, updateSkinProfileSchema, loginSchema, registerSchema, smsLoginSchema, smsVerifySchema } from "@shared/schema";
 import { sendSMSCode, generateSMSCode } from "./smsService";
-import { sendTelegramCode, generateTelegramCode, checkTelegramStatus } from "./telegramService";
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import authRoutes from './routes/authRoutes';
-import userRoutes from './routes/userRoutes';
-import productRoutes from './routes/productRoutes';
-import analysisRoutes from './routes/analysisRoutes';
-import ingredientRoutes from './routes/ingredientRoutes';
-import smsRoutes from './routes/smsRoutes';
-import aiRoutes from './routes/aiRoutes';
-import imageRoutes from './routes/imageRoutes';
-import { z } from "zod";
-import { limitImageSize } from './middleware/limitImageSize';
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+import { z } from "zod";
 
 // Unified authentication middleware
 const requireAuth = async (req: any, res: any, next: any) => {
@@ -76,23 +66,6 @@ const requireAuth = async (req: any, res: any, next: any) => {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
-
-  // Подключение authRoutes
-  app.use(authRoutes);
-  // Подключение userRoutes
-  app.use(userRoutes);
-  // Подключение productRoutes
-  app.use(productRoutes);
-  // Подключение analysisRoutes
-  app.use(analysisRoutes);
-  // Подключение ingredientRoutes
-  app.use(ingredientRoutes);
-  // Подключение smsRoutes
-  app.use(smsRoutes);
-  // Подключение aiRoutes
-  app.use(aiRoutes);
-  // Подключение imageRoutes
-  app.use(imageRoutes);
 
   // Simple login/password authentication routes
   app.post('/api/auth/register', async (req, res) => {
@@ -342,134 +315,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error verifying SMS:", error);
       res.status(500).json({ message: "Ошибка верификации SMS" });
-    }
-  });
-
-  // Telegram Authentication routes
-  app.post('/api/auth/telegram/send', async (req, res) => {
-    try {
-      const result = telegramLoginSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ 
-          message: "Некорректные данные", 
-          errors: result.error.issues 
-        });
-      }
-
-      const { phone } = result.data;
-      const code = generateTelegramCode();
-      const expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + 10); // 10 minutes
-
-      // Cleanup old codes
-      await storage.cleanupExpiredTelegramCodes();
-
-      // Save Telegram code to database
-      const telegramCode = await storage.createTelegramCode({
-        phone,
-        code,
-        expiresAt,
-        verified: false,
-        status: 0,
-        telegramMessageId: null
-      });
-
-      // Send Telegram code via SMS Aero API
-      try {
-        const telegramResponse = await sendTelegramCode({ phone, code });
-        
-        if (telegramResponse.success && telegramResponse.data) {
-          // Update code with Telegram message ID and status
-          await storage.updateTelegramCodeStatus(
-            telegramCode.id, 
-            telegramResponse.data.status,
-            telegramResponse.data.id
-          );
-          
-          res.json({ 
-            message: "Код отправлен в Telegram", 
-            phone,
-            telegramMessageId: telegramResponse.data.id
-          });
-        } else {
-          // Fallback to demo mode
-          console.log(`Telegram код для демонстрации (телефон ${phone}): ${code}`);
-          res.json({ 
-            message: "Telegram сервис временно недоступен. Для демонстрации используйте код: " + code,
-            phone,
-            demoCode: code
-          });
-        }
-      } catch (telegramError) {
-        console.error("Telegram API error:", telegramError);
-        console.log(`Telegram код для демонстрации (телефон ${phone}): ${code}`);
-        res.json({ 
-          message: "Telegram сервис временно недоступен. Для демонстрации используйте код: " + code,
-          phone,
-          demoCode: code
-        });
-      }
-    } catch (error) {
-      console.error("Error sending Telegram code:", error);
-      res.status(500).json({ message: "Ошибка отправки кода в Telegram" });
-    }
-  });
-
-  app.post('/api/auth/telegram/verify', async (req, res) => {
-    try {
-      const result = telegramVerifySchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ 
-          message: "Некорректные данные", 
-          errors: result.error.issues 
-        });
-      }
-
-      const { phone, code } = result.data;
-
-      // Verify the code
-      const telegramCode = await storage.getValidTelegramCode(phone, code);
-      if (!telegramCode) {
-        return res.status(400).json({ message: "Неверный или истёкший код" });
-      }
-
-      // Mark code as verified
-      await storage.markTelegramCodeAsVerified(telegramCode.id);
-
-      // Find or create user
-      let user = await storage.getUserByPhone(phone);
-      if (!user) {
-        user = await storage.createUserWithPhone(phone);
-      }
-
-      // Create session
-      (req.session as any).userId = user.id;
-      (req.session as any).username = user.username;
-
-      res.json({ 
-        user, 
-        message: "Вход через Telegram выполнен успешно" 
-      });
-    } catch (error) {
-      console.error("Error verifying Telegram code:", error);
-      res.status(500).json({ message: "Ошибка верификации Telegram кода" });
-    }
-  });
-
-  app.get('/api/auth/telegram/status/:id', async (req, res) => {
-    try {
-      const telegramMessageId = parseInt(req.params.id);
-      if (isNaN(telegramMessageId)) {
-        return res.status(400).json({ message: "Некорректный ID сообщения" });
-      }
-
-      // Check status via SMS Aero API
-      const statusResponse = await checkTelegramStatus({ id: telegramMessageId });
-      
-      res.json(statusResponse);
-    } catch (error) {
-      console.error("Error checking Telegram status:", error);
-      res.status(500).json({ message: "Ошибка проверки статуса Telegram" });
     }
   });
 
@@ -876,19 +721,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Alternative endpoint path for product ingredient search
-  app.post('/api/products/find-ingredients', async (req: any, res) => {
+  app.post('/api/products/find-ingredients', requireAuth, async (req: any, res) => {
     try {
-      console.log("Find ingredients request received:", req.body);
       const { productName } = req.body;
       
       if (!productName) {
-        console.log("No product name provided");
         return res.status(400).json({ message: "Product name is required" });
       }
 
-      console.log("Searching ingredients for:", productName);
       const ingredients = await findProductIngredients(productName);
-      console.log("Found ingredients:", ingredients);
       
       // Если состав не найден или неполный, предлагаем пользователю сканирование
       if (!ingredients || ingredients.length === 0) {
@@ -914,100 +755,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error finding ingredients:", error);
       res.status(500).json({ message: "Failed to find ingredients" });
-    }
-  });
-
-  // Analyze product URL to extract name and ingredients
-  app.post('/api/products/analyze-url', async (req: any, res) => {
-    try {
-      console.log("URL analysis request received:", req.body);
-      const { productUrl } = req.body;
-      
-      if (!productUrl) {
-        console.log("No product URL provided");
-        return res.status(400).json({ message: "Product URL is required" });
-      }
-
-      console.log("Analyzing URL:", productUrl);
-      
-      if (!process.env.PERPLEXITY_API_KEY) {
-        return res.status(500).json({ message: "PERPLEXITY_API_KEY не настроен" });
-      }
-
-      const response = await fetch('https://api.perplexity.ai/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'llama-3.1-sonar-small-128k-online',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a cosmetic product analyzer. Extract product information from URLs. Return only a JSON object with product name and ingredients list in English.'
-            },
-            {
-              role: 'user',
-              content: `Analyze this cosmetic product URL and extract the product name and complete ingredients list: ${productUrl}
-
-Please return a JSON object in this exact format:
-{
-  "productName": "Product Name",
-  "ingredients": "ingredient1, ingredient2, ingredient3..."
-}
-
-Only return the JSON object, no additional text. If ingredients are not found, return empty string for ingredients.`
-            }
-          ],
-          temperature: 0.2,
-          max_tokens: 1000,
-          stream: false
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Perplexity API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const content = data.choices[0].message.content;
-      console.log("Perplexity response:", content);
-      
-      try {
-        const productInfo = JSON.parse(content);
-        console.log("Extracted product info:", productInfo);
-        
-        res.json({
-          productName: productInfo.productName || '',
-          ingredients: productInfo.ingredients || ''
-        });
-      } catch (parseError) {
-        console.error("Failed to parse Perplexity response:", content);
-        
-        // Try to extract data manually if JSON parsing fails
-        let productName = '';
-        let ingredients = '';
-        
-        if (content.includes('productName')) {
-          const nameMatch = content.match(/"productName":\s*"([^"]+)"/);
-          productName = nameMatch ? nameMatch[1] : '';
-        }
-        
-        if (content.includes('ingredients')) {
-          const ingredientsMatch = content.match(/"ingredients":\s*"([^"]+)"/);
-          ingredients = ingredientsMatch ? ingredientsMatch[1] : '';
-        }
-        
-        res.json({
-          productName,
-          ingredients,
-          warning: "Частичный анализ - данные могут быть неполными"
-        });
-      }
-    } catch (error) {
-      console.error("Error analyzing URL:", error);
-      res.status(500).json({ message: "Failed to analyze URL" });
     }
   });
 
@@ -1166,7 +913,7 @@ Only return the JSON object, no additional text. If ingredients are not found, r
   });
 
   // Server-side OCR processing
-  app.post('/api/ocr-extract', requireAuth, limitImageSize('image'), async (req: any, res) => {
+  app.post('/api/ocr-extract', requireAuth, async (req: any, res) => {
     try {
       const { image } = req.body;
       

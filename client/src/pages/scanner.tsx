@@ -3,40 +3,42 @@ import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import AppHeader from "@/components/layout/app-header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
+import ImageUploadScanner from "@/components/scanner/image-upload-scanner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Camera, Search, Upload, Link, Scan, Sparkles } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Camera, ArrowLeft, Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Scanner() {
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState("camera");
+  const [showCamera, setShowCamera] = useState(false);
   const [productName, setProductName] = useState("");
-  const [productUrl, setProductUrl] = useState("");
   const [ingredients, setIngredients] = useState("");
+  const [productImage, setProductImage] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const createProductMutation = useMutation({
     mutationFn: async (productData: any) => {
-      return await apiRequest("/api/products", "POST", productData);
+      const response = await apiRequest("POST", "/api/products", productData);
+      return response.json();
     },
     onSuccess: (product) => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       analyzeProductMutation.mutate({ 
         productId: product.id, 
-        ingredientList: product.ingredients.join(", ")
+        ingredientList: ingredients 
       });
     },
     onError: () => {
       toast({
         title: "Ошибка",
-        description: "Не удалось создать продукт",
+        description: "Не удалось сохранить продукт. Попробуйте снова.",
         variant: "destructive",
       });
       setIsAnalyzing(false);
@@ -44,18 +46,19 @@ export default function Scanner() {
   });
 
   const analyzeProductMutation = useMutation({
-    mutationFn: async (data: { productId: number; ingredientList: string }) => {
-      return await apiRequest("/api/analyses", "POST", data);
+    mutationFn: async ({ productId, ingredientList }: { productId: number; ingredientList: string }) => {
+      const response = await apiRequest("POST", "/api/analysis", { productId, ingredientList });
+      return response.json();
     },
-    onSuccess: (analysis) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/analyses"] });
-      setLocation(`/analysis/${analysis.id}`);
-      setIsAnalyzing(false);
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/analysis/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      setLocation(`/analysis/${data.analysis.productId}`);
     },
     onError: () => {
       toast({
         title: "Ошибка",
-        description: "Не удалось проанализировать продукт",
+        description: "Не удалось проанализировать продукт. Попробуйте снова.",
         variant: "destructive",
       });
       setIsAnalyzing(false);
@@ -65,8 +68,8 @@ export default function Scanner() {
   const handleAnalyze = async () => {
     if (!productName.trim()) {
       toast({
-        title: "Ошибка",
-        description: "Введите название продукта",
+        title: "Недостающая информация",
+        description: "Укажите название продукта.",
         variant: "destructive",
       });
       return;
@@ -77,13 +80,16 @@ export default function Scanner() {
     try {
       let finalIngredients = ingredients;
       
-      if (!finalIngredients.trim()) {
-        const response = await apiRequest("/api/products/find-ingredients", "POST", {
+      // If no ingredients provided, try to find them automatically
+      if (!ingredients.trim()) {
+        const response = await apiRequest("POST", "/api/products/find-ingredients", {
           productName: productName.trim()
         });
+        const data = await response.json();
         
-        if (response.ingredients) {
-          finalIngredients = response.ingredients;
+        if (data.ingredients) {
+          finalIngredients = data.ingredients;
+          setIngredients(data.ingredients);
           toast({
             title: "Состав найден автоматически",
             description: "Анализируем найденный состав продукта.",
@@ -91,7 +97,7 @@ export default function Scanner() {
         } else {
           toast({
             title: "Состав не найден",
-            description: "Попробуйте ввести состав продукта вручную.",
+            description: "Введите состав продукта вручную для анализа.",
             variant: "destructive",
           });
           setIsAnalyzing(false);
@@ -99,153 +105,198 @@ export default function Scanner() {
         }
       }
 
+      // Create product with ingredients and image
       createProductMutation.mutate({
         name: productName,
-        ingredients: finalIngredients.split(',').map(ing => ing.trim()),
-        productUrl: productUrl || undefined,
+        category: "unknown",
+        ingredients: finalIngredients.split(",").map(i => i.trim()),
+        imageUrl: productImage,
       });
     } catch (error) {
       toast({
         title: "Ошибка",
-        description: "Произошла ошибка при анализе",
+        description: "Не удалось найти состав продукта. Попробуйте ввести его вручную.",
         variant: "destructive",
       });
       setIsAnalyzing(false);
     }
   };
 
+  const handleScanResult = (scannedText: string, extractedIngredients?: string[], capturedImage?: string, detectedProductName?: string) => {
+    if (extractedIngredients && extractedIngredients.length > 0) {
+      setIngredients(extractedIngredients.join(", "));
+    } else {
+      setIngredients(scannedText);
+    }
+    
+    // Сохраняем захваченное изображение
+    if (capturedImage) {
+      setProductImage(capturedImage);
+    }
+    
+    // Автоматически заполняем название продукта
+    if (detectedProductName && !productName.trim()) {
+      setProductName(detectedProductName);
+    }
+    
+    setShowCamera(false);
+  };
+
   return (
     <div className="app-container">
       <AppHeader />
-      <div className="content-area pb-20 p-4">
-        <div className="max-w-md mx-auto space-y-6">
-          <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50 border-0 shadow-lg">
-            <CardContent className="p-6">
-              <div className="text-center space-y-2 mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full mx-auto flex items-center justify-center mb-4">
-                  <Scan className="w-8 h-8 text-white" />
+      
+      <main className="pb-20 px-4 py-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center space-x-3">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => setLocation("/")}
+            className="p-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <h2 className="text-xl font-semibold">Сканер продуктов</h2>
+        </div>
+
+        {/* Scanner Section */}
+        <Card className="border-gray-200">
+          <CardContent className="p-6 space-y-4">
+            {showCamera ? (
+              <div className="space-y-4">
+                <ImageUploadScanner 
+                  onClose={() => setShowCamera(false)}
+                  onResult={handleScanResult}
+                />
+              </div>
+            ) : (
+              <>
+                <div className="relative bg-gray-100 rounded-xl h-48 flex items-center justify-center">
+                  <div className="text-center space-y-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/60 rounded-full mx-auto flex items-center justify-center">
+                      <Camera className="w-8 h-8 text-white" />
+                    </div>
+                    <p className="text-gray-600 text-sm">Нажмите для сканирования состава</p>
+                  </div>
                 </div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  Анализ продукта
-                </h1>
-                <p className="text-gray-600 text-sm">
-                  Выберите способ анализа косметического средства
+                
+                <Button 
+                  className="w-full app-gradient text-white font-medium"
+                  onClick={() => setShowCamera(true)}
+                >
+                  <Camera className="w-4 h-4 mr-2" />
+                  Запустить камеру
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Modern Product Information Form */}
+        <Card className="border-gray-200 shadow-sm">
+          <CardContent className="p-0">
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-6 border-b border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900">Информация о продукте</h3>
+              <p className="text-sm text-gray-600 mt-1">Введите данные о продукте для анализа</p>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              {/* Product Image Preview */}
+              {productImage && (
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <Label className="text-sm font-medium text-gray-700">
+                      Фото продукта
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                    <img 
+                      src={productImage} 
+                      alt="Product"
+                      className="w-16 h-16 object-cover rounded-lg border border-green-300"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-green-800">Изображение сохранено</p>
+                      <p className="text-xs text-green-600">Фото продукта будет добавлено к записи</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setProductImage(null)}
+                      className="text-green-600 hover:text-green-800 hover:bg-green-100"
+                    >
+                      Удалить
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Product Name Field */}
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-primary rounded-full"></div>
+                  <Label htmlFor="productName" className="text-sm font-medium text-gray-700">
+                    Название продукта *
+                  </Label>
+                </div>
+                <Input
+                  id="productName"
+                  placeholder="Например: La Roche-Posay Effaclar Duo"
+                  value={productName}
+                  onChange={(e) => setProductName(e.target.value)}
+                  className="border-gray-300 focus:border-primary focus:ring-primary/20"
+                />
+              </div>
+
+              {/* Ingredients Field */}
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-primary rounded-full"></div>
+                  <Label htmlFor="ingredients" className="text-sm font-medium text-gray-700">
+                    Состав продукта *
+                  </Label>
+                </div>
+                <Textarea
+                  id="ingredients"
+                  placeholder="Вставьте или введите список ингредиентов или просто название продукта для автоматического поиска состава..."
+                  value={ingredients}
+                  onChange={(e) => setIngredients(e.target.value)}
+                  rows={6}
+                  className="resize-none border-gray-300 focus:border-primary focus:ring-primary/20"
+                />
+                <p className="text-xs text-gray-500">
+                  Можете ввести просто название продукта - мы найдем состав автоматически
                 </p>
               </div>
 
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-4 mb-6">
-                  <TabsTrigger value="camera" className="flex flex-col items-center gap-1 py-3">
-                    <Camera className="h-4 w-4" />
-                    <span className="text-xs">Камера</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="upload" className="flex flex-col items-center gap-1 py-3">
-                    <Upload className="h-4 w-4" />
-                    <span className="text-xs">Фото</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="search" className="flex flex-col items-center gap-1 py-3">
-                    <Search className="h-4 w-4" />
-                    <span className="text-xs">Поиск</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="url" className="flex flex-col items-center gap-1 py-3">
-                    <Link className="h-4 w-4" />
-                    <span className="text-xs">URL</span>
-                  </TabsTrigger>
-                </TabsList>
+              {/* Analyze Button */}
+              <Button 
+                className="w-full app-gradient text-white font-medium h-12 text-base"
+                onClick={handleAnalyze}
+                disabled={isAnalyzing || !productName.trim()}
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Анализируем...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    Начать анализ
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </main>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Название продукта</label>
-                    <Input
-                      placeholder="Введите название продукта"
-                      value={productName}
-                      onChange={(e) => setProductName(e.target.value)}
-                      className="mb-4"
-                    />
-                  </div>
-
-                  <TabsContent value="camera" className="mt-0 space-y-4">
-                    <Card className="border-dashed border-2 border-gray-300">
-                      <CardContent className="p-8 text-center">
-                        <Camera className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-600 mb-4">Функция камеры в разработке</p>
-                        <Button variant="outline" disabled>
-                          <Camera className="mr-2 h-4 w-4" />
-                          Сканировать камерой
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-
-                  <TabsContent value="upload" className="mt-0 space-y-4">
-                    <Card className="border-dashed border-2 border-gray-300">
-                      <CardContent className="p-8 text-center">
-                        <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-600 mb-4">Загрузите фото состава продукта</p>
-                        <Button variant="outline" disabled>
-                          <Upload className="mr-2 h-4 w-4" />
-                          Выбрать файл
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-
-                  <TabsContent value="search" className="mt-0 space-y-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Состав (опционально)</label>
-                      <Textarea
-                        placeholder="Введите состав продукта или оставьте пустым для автоматического поиска"
-                        value={ingredients}
-                        onChange={(e) => setIngredients(e.target.value)}
-                        rows={4}
-                      />
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="url" className="mt-0 space-y-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">URL продукта</label>
-                      <Input
-                        placeholder="https://example.com/product"
-                        value={productUrl}
-                        onChange={(e) => setProductUrl(e.target.value)}
-                        className="mb-4"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Состав (опционально)</label>
-                      <Textarea
-                        placeholder="Введите состав продукта или оставьте пустым для автоматического поиска"
-                        value={ingredients}
-                        onChange={(e) => setIngredients(e.target.value)}
-                        rows={4}
-                      />
-                    </div>
-                  </TabsContent>
-                </div>
-
-                <Button
-                  onClick={handleAnalyze}
-                  disabled={isAnalyzing || !productName.trim()}
-                  className="w-full mt-6 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-3"
-                >
-                  {isAnalyzing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Анализируем...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Анализировать продукт
-                    </>
-                  )}
-                </Button>
-              </Tabs>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
       <BottomNavigation />
     </div>
   );

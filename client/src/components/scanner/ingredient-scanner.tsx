@@ -198,59 +198,56 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
     try {
       setIsProcessing(true);
       
-      console.log("Searching for product:", productName.trim());
+      const headers: any = { 'Content-Type': 'application/json' };
       
+      // Add authorization token if available
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       const response = await fetch('/api/products/find-ingredients', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         credentials: 'include',
         body: JSON.stringify({ productName: productName.trim() })
       });
 
-      console.log("Response status:", response.status);
-
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Server error:", errorText);
-        throw new Error(`Server returned ${response.status}`);
+        throw new Error('Failed to find ingredients');
       }
 
       const data = await response.json();
-      console.log("Server response:", data);
       
-      // Check if we have ingredients
+      // Check if we have valid ingredients data
       if (!data.ingredients || data.ingredients.trim().length === 0) {
         toast({
           title: "Состав не найден",
-          description: "Не удалось найти состав продукта. Попробуйте ввести его вручную.",
+          description: data.message || "Не удалось найти состав продукта. Попробуйте ввести его вручную.",
           variant: "destructive",
         });
         return;
       }
       
-      // Success - show found ingredients
+      // Show success message
       toast({
         title: "Состав найден!",
-        description: `Найдено ${data.ingredients.split(',').length} ингредиентов`,
+        description: "Обрабатываем найденный состав продукта...",
       });
 
-      // Split ingredients and clean them up
-      const ingredientsList = data.ingredients.split(',').map((ingredient: string) => ingredient.trim());
-      
-      // Pass results back to parent component
-      onResult?.(data.ingredients, ingredientsList, undefined, productName.trim());
-      
+      const result = await extractIngredientsMutation.mutateAsync(data.ingredients);
+      onResult?.(data.ingredients, result.ingredients, undefined, productName.trim());
     } catch (error) {
       console.error("Error searching product:", error);
       toast({
         title: "Ошибка поиска",
-        description: "Не удалось выполнить поиск. Проверьте подключение.",
+        description: "Не удалось найти состав продукта. Попробуйте сканирование.",
         variant: "destructive",
       });
     } finally {
       setIsProcessing(false);
     }
-  }, [productName, onResult, toast]);
+  }, [productName, extractIngredientsMutation, onResult, toast]);
 
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
