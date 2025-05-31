@@ -49,6 +49,8 @@ export async function sendTelegramCode({
     }
 
     console.log(`Sending Telegram code to ${cleanPhone}`);
+    console.log(`Request URL: ${baseUrl}?${params}`);
+    console.log(`Using email: ${process.env.SMSAERO_EMAIL}`);
     
     // Создаем базовую авторизацию
     const credentials = Buffer.from(`${process.env.SMSAERO_EMAIL}:${process.env.SMSAERO_API_KEY}`).toString('base64');
