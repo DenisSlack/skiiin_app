@@ -5,6 +5,7 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { analyzeIngredientsWithPerplexity, findProductIngredients, generatePartnerRecommendations, findProductImage, getPersonalizedRecommendation } from "./perplexity";
 import { extractIngredientsFromText } from "./gemini";
 import { scoreProduct } from "./scoring";
+import { scoreAdvancedProduct } from "./advancedScoring";
 import { insertProductSchema, insertAnalysisSchema, updateSkinProfileSchema, loginSchema, registerSchema, smsLoginSchema, smsVerifySchema, telegramLoginSchema, telegramVerifySchema } from "@shared/schema";
 import { sendSMSCode, generateSMSCode } from "./smsService";
 import { sendTelegramCode, generateTelegramCode, checkTelegramCodeStatus } from "./telegramService";
@@ -772,20 +773,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Генерируем оценку продукта
+      // Генерируем продвинутую оценку продукта
       try {
         const ingredientNames = analysisResult.ingredients.map((ing: any) => 
           typeof ing === 'string' ? ing : ing.name
         );
-        const productScoring = scoreProduct(
+        
+        // Используем продвинутую модель скоринга
+        const advancedScoring = scoreAdvancedProduct(
+          ingredientNames,
+          product.name,
+          skinProfile,
+          { reputation: 75, priceRange: "medium" } // базовые значения
+        );
+        
+        analysisResult.advancedScoring = advancedScoring;
+        
+        // Сохраняем также базовую оценку для совместимости
+        const basicScoring = scoreProduct(
           ingredientNames,
           product.name,
           skinProfile
         );
-        analysisResult.scoring = productScoring;
+        analysisResult.scoring = basicScoring;
       } catch (scoringError) {
         console.log("Could not generate product scoring:", scoringError);
         analysisResult.scoring = undefined;
+        analysisResult.advancedScoring = undefined;
       }
 
       // Генерируем партнерские рекомендации для монетизации

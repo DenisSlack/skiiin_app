@@ -9,6 +9,7 @@ import { Save, Share2, CheckCircle, Info, Star, AlertTriangle, Microscope, Trend
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import ProductScoring from "./product-scoring";
+import AdvancedScoring from "./advanced-scoring";
 
 interface ProductAnalysisProps {
   product: any;
