@@ -52,9 +52,18 @@ export default function Scanner() {
       return await apiRequest("/api/analysis", "POST", { productId, ingredientList });
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/analysis/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
-      setLocation(`/analysis-result/${data.analysis.id}`);
+      // Store analysis data temporarily in sessionStorage for the results page
+      sessionStorage.setItem('tempAnalysisData', JSON.stringify({
+        analysis: data.analysis,
+        result: data.result,
+        productData: {
+          name: productName,
+          category: "unknown",
+          ingredients: ingredients.split(",").map(i => i.trim()),
+          imageUrl: productImage,
+        }
+      }));
+      setLocation(`/analysis-result/temp`);
     },
     onError: () => {
       toast({

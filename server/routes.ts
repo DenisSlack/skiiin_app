@@ -676,6 +676,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Save product to favorites (with analysis)
+  app.post('/api/products/save-favorite', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { productData, analysisData } = req.body;
+      
+      // Create product first
+      const productToSave = {
+        ...productData,
+        userId
+      };
+      
+      const savedProduct = await storage.createProduct(productToSave);
+      
+      // Then create analysis record
+      const analysisToSave = {
+        productId: savedProduct.id,
+        userId,
+        compatibilityScore: analysisData.compatibilityScore,
+        compatibilityRating: analysisData.compatibilityRating,
+        analysisData: analysisData.result
+      };
+      
+      const savedAnalysis = await storage.createAnalysis(analysisToSave);
+      
+      res.json({
+        product: savedProduct,
+        analysis: savedAnalysis,
+        message: "Продукт сохранен в избранном"
+      });
+    } catch (error) {
+      console.error("Error saving to favorites:", error);
+      res.status(400).json({ message: "Не удалось сохранить в избранное" });
+    }
+  });
+
   // Analysis routes
   app.post('/api/analysis', requireAuth, async (req: any, res) => {
     try {
@@ -764,33 +800,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Обновляем продукт с результатами анализа (не создаем новый)
       // Продукт уже существует, просто сохраняем анализ
 
-      // Save analysis with minimal data (temporary solution)
-      const analysisData = {
-        productId,
-        userId,
-        compatibilityScore: Math.round(analysisResult.compatibilityScore || 0),
-        compatibilityRating: analysisResult.compatibilityRating || 'good',
-        analysisData: analysisResult, // Full analysis data as JSON
-      };
-
-      // Create analysis record (fallback if database is unavailable)
+      // Return temporary analysis without saving to database
+      // User can save to favorites later if they want
       let analysis = {
-        id: Date.now(), // temporary ID
+        id: Date.now(), // temporary ID for frontend
         productId,
         userId,
         compatibilityScore: Math.round(analysisResult.compatibilityScore || 0),
         compatibilityRating: analysisResult.compatibilityRating || 'good',
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        temporary: true // Mark as temporary analysis
       };
-
-      // Try to save to database, but continue if it fails
-      try {
-        const dbAnalysis = await storage.createAnalysis(analysisData);
-        analysis = dbAnalysis; // Use database version if successful
-      } catch (dbError) {
-        console.error("Database temporarily unavailable, using memory analysis:", dbError);
-        // Continue with memory-based analysis
-      }
       
       res.json({
         analysis,
