@@ -255,7 +255,7 @@ export default function AdvancedScoring({ scoring }: AdvancedScoringProps) {
                     <div className="flex items-center gap-2">
                       <Progress value={value as number} className="w-20" />
                       <span className={`text-sm font-semibold ${getScoreColor(value as number)}`}>
-                        {value}
+                        {value as number}
                       </span>
                     </div>
                   </div>
