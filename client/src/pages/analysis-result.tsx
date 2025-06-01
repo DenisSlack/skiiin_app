@@ -17,10 +17,16 @@ export default function AnalysisResult() {
 
   // Find the analysis by ID or get the latest one
   const targetAnalysis = analysisId 
-    ? analyses.find((analysis: any) => analysis.id.toString() === analysisId)
-    : analyses[0]; // Get the latest analysis if no specific ID
+    ? (analyses as any[]).find((analysis: any) => analysis.id.toString() === analysisId)
+    : (analyses as any[])[0]; // Get the latest analysis if no specific ID
 
-  if (analysesLoading) {
+  // Get product information if we have an analysis
+  const { data: product, isLoading: productLoading } = useQuery({
+    queryKey: [`/api/products/${targetAnalysis?.productId}`],
+    enabled: !!targetAnalysis?.productId,
+  });
+
+  if (analysesLoading || productLoading) {
     return (
       <div className="app-container">
         <AppHeader />
@@ -72,8 +78,8 @@ export default function AnalysisResult() {
           </Button>
           
           <ProductAnalysis 
+            product={product}
             analysis={targetAnalysis}
-            showProductInfo={true}
           />
         </div>
       </div>

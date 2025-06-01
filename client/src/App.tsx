@@ -9,6 +9,7 @@ import Login from "@/pages/login";
 import Home from "@/pages/home";
 import Scanner from "@/pages/scanner";
 import Analysis from "@/pages/analysis";
+import AnalysisResult from "@/pages/analysis-result";
 import Library from "@/pages/library";
 import Profile from "@/pages/profile";
 import AdminLogin from "@/pages/admin-login";
@@ -47,6 +48,7 @@ function Router() {
           <Route path="/" component={Home} />
           <Route path="/scanner" component={Scanner} />
           <Route path="/analysis/:id" component={Analysis} />
+          <Route path="/analysis-result/:id?" component={AnalysisResult} />
           <Route path="/library" component={Library} />
           <Route path="/profile" component={Profile} />
         </>

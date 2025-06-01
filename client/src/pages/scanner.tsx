@@ -54,7 +54,7 @@ export default function Scanner() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/analysis/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
-      setLocation(`/analysis/${data.analysis.productId}`);
+      setLocation(`/analysis-result/${data.analysis.id}`);
     },
     onError: () => {
       toast({
