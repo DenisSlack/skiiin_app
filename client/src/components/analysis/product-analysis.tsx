@@ -182,6 +182,11 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
         <ProductScoring scoring={analysis.scoring} />
       )}
 
+      {/* Advanced Scoring */}
+      {analysis?.advancedScoring && (
+        <AdvancedScoring scoring={analysis.advancedScoring} />
+      )}
+
       {/* Key Insights */}
       {insights && (insights.positive?.length > 0 || insights.concerns?.length > 0) && (
         <Card className="border-gray-200">

@@ -787,7 +787,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           { reputation: 75, priceRange: "medium" } // базовые значения
         );
         
-        analysisResult.advancedScoring = advancedScoring;
+        // Добавляем продвинутый скоринг к результату
+        (analysisResult as any).advancedScoring = advancedScoring;
         
         // Сохраняем также базовую оценку для совместимости
         const basicScoring = scoreProduct(
@@ -799,7 +800,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (scoringError) {
         console.log("Could not generate product scoring:", scoringError);
         analysisResult.scoring = undefined;
-        analysisResult.advancedScoring = undefined;
+        (analysisResult as any).advancedScoring = undefined;
       }
 
       // Генерируем партнерские рекомендации для монетизации
