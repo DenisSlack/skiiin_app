@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import ProductScoring from "./product-scoring";
 import AdvancedScoring from "./advanced-scoring";
+import PersonalizedCompatibility from "./personalized-compatibility";
 
 interface ProductAnalysisProps {
   product: any;
@@ -180,6 +182,14 @@ export default function ProductAnalysis({ product, analysis }: ProductAnalysisPr
       {/* Product Scoring */}
       {analysis?.scoring && (
         <ProductScoring scoring={analysis.scoring} />
+      )}
+
+      {/* Personalized Compatibility */}
+      {analysis?.personalizedCompatibility && (
+        <PersonalizedCompatibility 
+          compatibility={analysis.personalizedCompatibility} 
+          userProfile={user}
+        />
       )}
 
       {/* Advanced Scoring */}
