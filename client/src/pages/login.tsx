@@ -13,17 +13,12 @@ export default function LoginPage() {
   const queryClient = useQueryClient();
 
   const handleLoginSuccess = (user?: any, token?: string) => {
-    // Store token if provided
-    if (token) {
-      localStorage.setItem('auth_token', token);
-    }
-    
     // Invalidate queries to refetch user data
     queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
     queryClient.invalidateQueries({ queryKey: ["/api/auth/session"] });
     
     // Redirect to home page
-    setLocation("/");
+    setLocation("/home");
   };
 
   return (

@@ -1,6 +1,9 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import session from "express-session";
+import pgSession from "connect-pg-simple";
+import postgres from "postgres";
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
@@ -56,6 +59,38 @@ app.use((req, res, next) => {
   next();
 });
 
+// Configure session store
+const PostgresStore = pgSession(session);
+const sessionStore = new PostgresStore({
+  conString: process.env.DATABASE_URL,
+  tableName: 'sessions',
+  createTableIfMissing: false, // We already have the table from Drizzle
+});
+
+// Add session middleware
+app.use(session({
+  store: sessionStore,
+  secret: process.env.SESSION_SECRET || 'your-secret-key-here',
+  resave: true,
+  saveUninitialized: true,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    sameSite: 'lax'
+  },
+  name: 'skiiin.sid'
+}));
+
+// Add debug middleware to log session data
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.path.startsWith('/api')) {
+    log(`Session ID: ${req.sessionID}`);
+    log(`Session data: ${JSON.stringify(req.session)}`);
+  }
+  next();
+});
+
 (async () => {
   const server = await registerRoutes(app);
 
@@ -76,15 +111,8 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
+  const port = Number(process.env.PORT) || 8081;
+  server.listen(port, "0.0.0.0", () => {
     log(`serving on port ${port}`);
   });
 })();

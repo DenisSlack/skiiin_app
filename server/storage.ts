@@ -35,6 +35,7 @@ export interface IStorage {
   createUserWithPhone(phone: string): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateSkinProfile(userId: string, profile: UpdateSkinProfile): Promise<User>;
+  getUserByTelegramId(telegramId: string): Promise<User | undefined>;
   
   // Product operations
   createProduct(product: InsertProduct): Promise<Product>;
@@ -70,9 +71,13 @@ export class DatabaseStorage implements IStorage {
   // User operations
   // (IMPORTANT) these user operations are mandatory for Replit Auth.
 
-  async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+  async getUser(id: string): Promise<User | null> {
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1);
+    return result[0] || null;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
@@ -153,6 +158,11 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUserByTelegramId(telegramId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.telegramId, telegramId));
+    return user;
+  }
+
   // Product operations
   async createProduct(product: InsertProduct): Promise<Product> {
     const [newProduct] = await db.insert(products).values(product).returning();
@@ -168,8 +178,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProduct(id: number): Promise<Product | undefined> {
-    const [product] = await db.select().from(products).where(eq(products.id, id));
-    return product;
+    const result = await db
+      .select()
+      .from(products)
+      .where(eq(products.id, id))
+      .limit(1);
+    return result[0] || null;
   }
 
   async deleteProduct(id: number, userId: string): Promise<void> {
@@ -179,9 +193,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Analysis operations
-  async createAnalysis(analysis: InsertAnalysis): Promise<Analysis> {
-    const [newAnalysis] = await db.insert(analyses).values(analysis).returning();
-    return newAnalysis;
+  async createAnalysis(data: any): Promise<any> {
+    const result = await db
+      .insert(analyses)
+      .values({
+        productId: data.productId,
+        userId: data.userId,
+        compatibilityScore: data.compatibilityScore,
+        compatibilityRating: data.compatibilityRating,
+        analysisData: data.analysisData,
+      })
+      .returning();
+    return result[0];
   }
 
   async getProductAnalyses(productId: number): Promise<Analysis[]> {
@@ -192,7 +215,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(analyses.createdAt));
   }
 
-  async getUserAnalyses(userId: string): Promise<Analysis[]> {
+  async getUserAnalyses(userId: string): Promise<any[]> {
     return await db
       .select()
       .from(analyses)
@@ -329,7 +352,4 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Use Supabase API storage for better reliability
-import { SupabaseStorage } from './supabaseStorage';
-
-export const storage = new SupabaseStorage();
+export const storage = new DatabaseStorage();

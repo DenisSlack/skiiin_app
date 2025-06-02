@@ -22,8 +22,7 @@ export const sessions = pgTable(
     sid: varchar("sid").primaryKey(),
     sess: jsonb("sess").notNull(),
     expire: timestamp("expire").notNull(),
-  },
-  (table) => [index("IDX_session_expire").on(table.expire)],
+  }
 );
 
 // User storage table.
@@ -36,6 +35,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  telegramId: varchar("telegram_id").unique(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   // Personal data
@@ -167,11 +167,12 @@ export const loginSchema = z.object({
 });
 
 export const registerSchema = z.object({
-  username: z.string().min(3, "Логин должен содержать минимум 3 символа"),
-  password: z.string().min(6, "Пароль должен содержать минимум 6 символов"),
+  username: z.string().min(3, "Логин должен содержать минимум 3 символа").optional(),
+  password: z.string().min(6, "Пароль должен содержать минимум 6 символов").optional(),
   email: z.string().email("Введите корректный email").optional(),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
+  telegramId: z.string().optional(),
 });
 
 export const smsLoginSchema = z.object({

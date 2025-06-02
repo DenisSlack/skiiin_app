@@ -100,10 +100,17 @@ export default function Scanner() {
           
           console.log("Received response:", response);
           
-          if (response.ingredients && response.ingredients.trim().length > 0) {
+          if (response && response.ingredients && Array.isArray(response.ingredients)) {
+            finalIngredients = response.ingredients.join(", ");
+          } else if (response && typeof response.ingredients === 'string' && response.ingredients.trim().length > 0) {
             finalIngredients = response.ingredients;
-            setIngredients(response.ingredients);
-            console.log("Ingredients found:", response.ingredients);
+          }
+          
+          // Set ingredients in the textarea
+          setIngredients(finalIngredients);
+          
+          if (finalIngredients.trim().length > 0) {
+            console.log("Ingredients found:", finalIngredients);
             toast({
               title: "Состав найден автоматически",
               description: "Анализируем найденный состав продукта.",
@@ -207,23 +214,33 @@ export default function Scanner() {
   };
 
   const handleScanResult = (scannedText: string, extractedIngredients?: string[], capturedImage?: string, detectedProductName?: string) => {
-    if (extractedIngredients && extractedIngredients.length > 0) {
-      setIngredients(extractedIngredients.join(", "));
-    } else {
+    // Set ingredients from the raw text if no extracted ingredients
+    if (!extractedIngredients || extractedIngredients.length === 0) {
       setIngredients(scannedText);
+    } else {
+      // Join extracted ingredients with commas and proper spacing
+      setIngredients(extractedIngredients.join(", "));
     }
     
-    // Сохраняем захваченное изображение
+    // Save captured image if available
     if (capturedImage) {
       setProductImage(capturedImage);
     }
     
-    // Автоматически заполняем название продукта
+    // Set product name if detected and not already set
     if (detectedProductName && !productName.trim()) {
       setProductName(detectedProductName);
     }
-    
+
+    // Switch to manual tab to show the results
+    setActiveTab("manual");
     setShowCamera(false);
+
+    // Show success message
+    toast({
+      title: "Состав найден!",
+      description: "Проверьте и отредактируйте если нужно",
+    });
   };
 
   return (

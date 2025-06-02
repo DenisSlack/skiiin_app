@@ -13,10 +13,18 @@ export default function AppHeader() {
   return (
     <header className="bg-white border-b border-gray-100 p-4 flex items-center justify-between sticky top-0 z-40">
       <div className="flex items-center space-x-3">
-        <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/60 rounded-lg flex items-center justify-center">
+        <div 
+          className="w-8 h-8 bg-gradient-to-br from-primary to-primary/60 rounded-lg flex items-center justify-center cursor-pointer"
+          onClick={() => setLocation("/home")}
+        >
           <FlaskConical className="text-white text-sm" />
         </div>
-        <h1 className="text-lg font-semibold">Skiiin IQ</h1>
+        <h1 
+          className="text-lg font-semibold cursor-pointer" 
+          onClick={() => setLocation("/home")}
+        >
+          Skiiin IQ
+        </h1>
       </div>
       
       <Button

@@ -42,10 +42,19 @@ function Router() {
       
       <Route path="/login" component={Login} />
       {!isAuthenticated ? (
-        <Route path="/" component={Landing} />
+        <>
+          <Route path="/" component={Landing} />
+          <Route path="/home">
+            {() => {
+              window.location.href = '/login';
+              return null;
+            }}
+          </Route>
+        </>
       ) : (
         <>
           <Route path="/" component={Home} />
+          <Route path="/home" component={Home} />
           <Route path="/scanner" component={Scanner} />
           <Route path="/analysis/:id" component={Analysis} />
           <Route path="/analysis-result/:id?" component={AnalysisResult} />

@@ -7,9 +7,6 @@ export function useLogout() {
 
   return useMutation({
     mutationFn: async () => {
-      // Clear localStorage token
-      localStorage.removeItem('auth_token');
-      
       // Call logout API to clear server session
       try {
         await fetch('/api/auth/logout', {

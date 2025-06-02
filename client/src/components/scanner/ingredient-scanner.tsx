@@ -209,8 +209,18 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
         productName: productName.trim()
       });
       
-      // Check if we have valid ingredients data
-      if (!data.ingredients || data.ingredients.trim().length === 0) {
+      // Convert ingredients to string if it's an array
+      let ingredientsString = '';
+      if (data && data.ingredients) {
+        if (Array.isArray(data.ingredients)) {
+          ingredientsString = data.ingredients.join(", ");
+        } else if (typeof data.ingredients === 'string') {
+          ingredientsString = data.ingredients;
+        }
+      }
+      
+      // Check if we have valid ingredients
+      if (!ingredientsString.trim()) {
         toast({
           title: "Состав не найден",
           description: data.message || "Не удалось найти состав продукта. Попробуйте ввести его вручную.",
@@ -225,8 +235,9 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
         description: "Обрабатываем найденный состав продукта...",
       });
 
-      const result = await extractIngredientsMutation.mutateAsync(data.ingredients);
-      onResult?.(data.ingredients, result.ingredients, undefined, productName.trim());
+      // Pass the ingredients string to the parent component
+      onResult?.(ingredientsString, [ingredientsString], undefined, productName.trim());
+      
     } catch (error) {
       console.error("Error searching product:", error);
       toast({
@@ -237,7 +248,7 @@ export default function IngredientScanner({ onClose, onResult }: IngredientScann
     } finally {
       setIsProcessing(false);
     }
-  }, [productName, extractIngredientsMutation, onResult, toast]);
+  }, [productName, onResult, toast]);
 
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

@@ -9,6 +9,8 @@ export function useAuth() {
     retry: false,
   });
 
+  console.log("Auth state:", { user, isLoading, error });
+
   return {
     user,
     isLoading,

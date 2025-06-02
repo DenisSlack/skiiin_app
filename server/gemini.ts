@@ -132,6 +132,8 @@ ${skinProfileText}
     }
 
     const data = await response.json();
+    console.log("Full Perplexity API response:", JSON.stringify(data, null, 2));
+    
     let text = data.choices[0]?.message?.content?.trim() || "";
     
     // Очищаем от markdown и комментариев
@@ -300,11 +302,13 @@ export async function getProductRecommendationsWithGemini(
 }
 
 // Функция для поиска ингредиентов продукта по названию через Perplexity AI
-export async function findProductIngredients(productName: string): Promise<string> {
+export async function findProductIngredients(productName: string): Promise<string | undefined> {
   try {
     if (!process.env.PERPLEXITY_API_KEY) {
       throw new Error("PERPLEXITY_API_KEY не настроен");
     }
+
+    console.log("Searching ingredients for:", productName);
 
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
@@ -317,29 +321,35 @@ export async function findProductIngredients(productName: string): Promise<strin
         messages: [
           {
             role: "system",
-            content: "You are a cosmetics expert. Return ONLY the clean ingredients list in English without explanations, reasoning or technical information."
+            content: "You are a cosmetics ingredients database. When asked about a product, search its ingredients list from official sources and return ONLY the ingredients list. Format: comma-separated INCI names, nothing else."
           },
           {
             role: "user",
-            content: `Find the ingredients list for cosmetic product "${productName}". 
+            content: `What are the ingredients in "${productName}"? Search official product websites, online retailers (Sephora, Ulta, etc), and ingredient databases.
 
-RETURN ONLY: ingredients list in English, separated by commas
+IMPORTANT RULES:
+1. Return ONLY the ingredients list
+2. Use INCI names (Latin)
+3. Separate with commas
+4. NO other text or explanations
+5. NO JSON formatting
 
-DO NOT ADD:
-- "Based on available sources..."
-- "However..."
-- "According to..."
-- Any explanations or comments
+Example correct response:
+Aqua, Butylene Glycol, Glycerin, Niacinamide, Dimethicone
 
-Example correct answer: "Water, Glycerin, Niacinamide, Cetyl Alcohol, Salicylic Acid"
+Example incorrect responses:
+- "The ingredients are: Water, Glycerin..."
+- "According to the official website..."
+- "{"ingredients": "Water, Glycerin"}"
+- "I found: Water, Glycerin"
 
-If ingredients not found, return empty string.`
+If you cannot find the ingredients, respond exactly with: NO_INGREDIENTS_FOUND`
           }
         ],
-        max_tokens: 300,
+        max_tokens: 800,
         temperature: 0.1,
-        top_p: 0.8,
-        search_recency_filter: "week",
+        top_p: 0.9,
+        search_recency_filter: "day",
         return_images: false,
         return_related_questions: false,
         stream: false
@@ -347,56 +357,68 @@ If ingredients not found, return empty string.`
     });
 
     if (!response.ok) {
+      console.error("\n🔴 PERPLEXITY API ERROR:", response.status, await response.text());
       throw new Error(`Perplexity API error: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log("\n🔍 PERPLEXITY API REQUEST for product:", productName);
+    console.log("\n📝 FULL PERPLEXITY RESPONSE:", JSON.stringify(data, null, 2));
+    
     let ingredients = data.choices[0]?.message?.content?.trim() || "";
     
-    // Очищаем от технических фраз и объяснений
-    const unwantedPhrases = [
-      "Из доступных источников",
-      "не удалось найти",
-      "Однако",
-      "По информации",
-      "К сожалению",
-      "Unfortunately",
-      "However",
-      "Based on available information",
-      "According to",
-      "Please note",
-      "It should be noted"
-    ];
-    
-    // Удаляем предложения с нежелательными фразами
-    const sentences = ingredients.split(/[.!?]\s+/);
-    const cleanSentences = sentences.filter(sentence => {
-      return !unwantedPhrases.some(phrase => 
-        sentence.toLowerCase().includes(phrase.toLowerCase())
-      );
-    });
-    
-    ingredients = cleanSentences.join('. ').trim();
-    
-    // Извлекаем только часть с ингредиентами (обычно после двоеточия или в конце)
-    if (ingredients.includes(':')) {
-      const parts = ingredients.split(':');
-      ingredients = parts[parts.length - 1].trim();
+    console.log("\n=== 🧪 PERPLEXITY RESPONSE ANALYSIS ===");
+    console.log("Raw content:", ingredients);
+    console.log("Content length:", ingredients.length);
+    console.log("Content type:", typeof ingredients);
+    console.log("First 100 characters:", ingredients.substring(0, 100));
+    console.log("Contains 'NO_INGREDIENTS_FOUND':", ingredients.includes("NO_INGREDIENTS_FOUND"));
+    console.log("=====================================\n");
+
+    // Если ингредиенты не найдены
+    if (ingredients === "NO_INGREDIENTS_FOUND" || ingredients.length < 5) {
+      console.log("❌ No ingredients found - early return");
+      return undefined;
     }
-    
-    // Проверяем, что получили реальный список ингредиентов
-    if (ingredients.includes("не найден") || 
-        ingredients.includes("not found") || 
-        ingredients.includes("не могу") ||
-        ingredients.includes("cannot") ||
-        ingredients.length < 10) {
-      return "";
+
+    // Очищаем результат от возможных артефактов
+    const originalIngredients = ingredients;
+    ingredients = ingredients
+      .replace(/^ingredients:?\s*/i, '')
+      .replace(/^composition:?\s*/i, '')
+      .replace(/^состав:?\s*/i, '')
+      .replace(/^contains:?\s*/i, '')
+      .replace(/^includes:?\s*/i, '')
+      .replace(/[\[\]"{}]/g, '')
+      .split(',')
+      .map((i: string) => i.trim())
+      .filter((i: string) => {
+        const cleaned = i.trim().toLowerCase();
+        return cleaned && 
+               cleaned.length > 1 && 
+               !cleaned.includes('no_ingredients_found') &&
+               !cleaned.startsWith('the ') &&
+               !cleaned.startsWith('ingredients') &&
+               !cleaned.startsWith('contains');
+      })
+      .join(', ');
+
+    console.log("\n=== 🧬 INGREDIENTS PROCESSING ===");
+    console.log("Original:", originalIngredients);
+    console.log("After cleaning:", ingredients);
+    console.log("Final length:", ingredients.length);
+    console.log("============================\n");
+
+    if (!ingredients || ingredients.length < 5) {
+      console.log("❌ No valid ingredients found after cleaning");
+      return undefined;
     }
-    
+
+    console.log("✅ Successfully found and processed ingredients");
     return ingredients;
   } catch (error) {
     console.error("Error finding product ingredients via Perplexity:", error);
-    return "";
+    return undefined;
   }
 }
 
