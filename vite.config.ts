@@ -21,4 +21,12 @@ export default defineConfig({
     outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
   },
+  server: {
+    host: true,
+    allowedHosts: [
+      'localhost',
+      'www.skiiin.ru',
+      'skiiin.ru'
+    ],
+  },
 });
